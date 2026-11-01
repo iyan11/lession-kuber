@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Практический курс Kubernetes на Windows: Minikube, kubectl и твой первый кластер. Docker — предварительное знание.">
-  <title>KubeLab — Kubernetes своими руками</title>
+  <meta name="description" content="Уроки Kubernetes на Windows: объяснения команд Minikube и kubectl, задания и проверка результата. Знание Docker предполагается.">
+  <title>KubeLab — уроки Kubernetes</title>
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'">
   <link rel="stylesheet" href="./styles.css">
   <script type="module" src="./app.js"></script>
@@ -12,20 +12,21 @@
   <a class="skip" href="#main">Перейти к содержимому</a>
   <aside class="sidebar">
     <a class="brand" href="#home"><span class="brand-icon">⎈</span> KubeLab<span class="beta">01</span></a>
-    <div class="workspace"><span class="tiny-dot"></span> Личная лаборатория <small>WINDOWS / POWERSHELL</small></div>
-    <p class="nav-label">ТВОЁ ОБУЧЕНИЕ</p>
+    <div class="workspace"><span class="tiny-dot"></span> Учебный кластер <small>Windows · Minikube</small></div>
+    <p class="nav-label">Курс</p>
     <nav aria-label="Главная навигация">
-      <a href="#home" data-nav="home"><span>›_</span> Консоль</a>
-      <a href="#lesson/0" data-nav="lesson"><span>⌘</span> Практикум <b>7</b></a>
-      <a href="#map" data-nav="map"><span>◇</span> Как всё связано</a>
+      <a href="#home" data-nav="home"><span>›_</span> Текущий урок</a>
+      <a href="#lesson/0" data-nav="lesson"><span>⌘</span> Все уроки <b>7</b></a>
+      <a href="#map" data-nav="map"><span>◇</span> Устройство кластера</a>
       <a href="#commands" data-nav="commands"><span>›_</span> Шпаргалка</a>
+      <a href="#help" data-nav="help"><span>?</span> Помощь</a>
     </nav>
-    <div class="sidebar-bottom"><div class="side-progress"><span>Твой прогресс</span><strong id="side-count">0 / 7</strong></div><div class="track"><div id="side-bar"></div></div><p>Маленькие шаги. Настоящий кластер.</p><a href="https://kubernetes.io/ru/docs/home/" target="_blank" rel="noreferrer">Документация Kubernetes ↗</a></div>
+    <div class="sidebar-bottom"><div class="side-progress"><span>Пройдено</span><strong id="side-count">0 / 7</strong></div><div class="track"><div id="side-bar"></div></div><p>Проходите уроки по порядку.</p><a href="https://kubernetes.io/ru/docs/home/" target="_blank" rel="noreferrer">Документация Kubernetes ↗</a></div>
   </aside>
   <div class="shell">
     <header class="topbar"><span>ПРАКТИКА / KUBERNETES</span><div><span class="environment">Windows + Minikube</span><span class="avatar">K</span></div></header>
     <main id="main" tabindex="-1"></main>
-    <footer>Собрано для практики <span>Docker → Minikube → Kubernetes</span></footer>
+    <footer>KubeLab <span>Курс Kubernetes</span></footer>
   </div>
   <div id="toast" role="status" aria-live="polite"></div>
 </body>

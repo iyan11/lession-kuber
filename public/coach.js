@@ -1,10 +1,10 @@
 export function suggest(command, output = '') {
   const text = `${command}\n${output}`;
   if (/^minicube\b/i.test(command)) return { title: 'Опечатка в названии', text: 'Правильное имя инструмента — minikube, через k.', command: command.replace(/^minicube/i, 'minikube') };
-  if (/ErrImageNeverPull|ImagePullBackOff|ErrImagePull|image.*not found/i.test(output)) return { title: 'Не найден образ', text: 'Проверь тег в Deployment. Для локального образа загрузи его в тот же профиль Minikube.', command: 'minikube image load kubelab:1.0 -p kubelab' };
+  if (/ErrImageNeverPull|ImagePullBackOff|ErrImagePull|image.*not found/i.test(output)) return { title: 'Контейнер не запущен: образ недоступен', text: 'Посмотрите, какой образ указан в Deployment. При политике Never этот образ должен уже находиться на узле. В последнем уроке мы намеренно указали неправильный тег и исправляем его откатом.', command: 'kubectl --context kubelab -n kubelab describe deployment kubelab' };
   if (/connection.*refused|cannot connect|daemon.*not running|docker.*unavailable|error during connect/i.test(output)) return { title: 'Нет подключения', text: 'Открой Docker Desktop и дождись запуска Engine. Затем проверь состояние профиля.', command: 'minikube status -p kubelab' };
   if (/context.*(not found|does not exist)|profile.*not found|does not exist.*profile/i.test(output)) return { title: 'Учебный кластер не создан', text: 'Создай профиль kubelab. Он используется во всех командах курса.', command: 'minikube start -p kubelab --driver=docker --cpus=2 --memory=3072' };
-  if (/not found in PATH|не найден в PATH|ENOENT/i.test(output)) return { title: 'Инструмент не установлен', text: 'Установи нужный CLI из официального источника, проверь PATH и перезапусти приложение.', command: 'help' };
+  if (/not found in PATH|не найден в PATH|ENOENT/i.test(output)) return { title: 'Не найдена нужная программа', text: 'Откройте «Помощь» → «Проверить установленные компоненты». Эта проверка покажет, какой программы не хватает.', command: 'help' };
   if (/address already in use|bind.*(failed|forbidden)|port.*allocated/i.test(output)) return { title: 'Порт занят', text: 'Останови предыдущий туннель или выбери другой локальный порт, например 8082.', command: 'kubectl --context kubelab -n kubelab port-forward service/kubelab 8082:80' };
   if (/CrashLoopBackOff/i.test(output)) return { title: 'Контейнер перезапускается', text: 'Прочитай логи предыдущего запуска контейнера. Имя Pod возьми из get pods.', command: 'kubectl --context kubelab -n kubelab get pods' };
   if (/notfound|not found|No resources found/i.test(output)) return { title: 'Ресурс не найден', text: 'Проверь namespace kubelab и применён ли lab.yaml.', command: 'kubectl --context kubelab apply -f k8s/lab.yaml' };
@@ -12,7 +12,7 @@ export function suggest(command, output = '') {
   if (/^kubectl\s+get\s+(pod|pods)\s*$/.test(command)) return { title: 'Выбери учебный namespace', text: 'Без namespace команда смотрит в default. В курсе ресурсы находятся в kubelab.', command: 'kubectl --context kubelab -n kubelab get pods' };
   if (/\bedit\b/.test(command)) return { title: 'Нужен внешний редактор', text: 'Встроенная консоль не поддерживает интерактивный редактор. Используй patch из урока ConfigMap или обычный PowerShell.', command: '' };
   if (output && /error|ошибка|failed/i.test(output)) return { title: 'Команда завершилась с ошибкой', text: 'Прочитай сообщение выше. Проверь контекст, namespace и справку команды.', command: 'kubectl --context kubelab -n kubelab get events --sort-by=.metadata.creationTimestamp' };
-  return { title: 'Следующий шаг', text: 'Выполни команду из урока. Читай результат и сравнивай его с ожидаемым. Подсказки появятся здесь, если обнаружится знакомая ошибка.', command: '' };
+  return { title: 'Пояснение к команде', text: 'Вставьте команду из текста урока. Здесь появится объяснение её назначения, результата или обнаруженной ошибки.', command: '' };
 }
 
 export function createSimulation() {

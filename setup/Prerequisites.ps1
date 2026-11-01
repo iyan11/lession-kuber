@@ -64,6 +64,16 @@ function Get-PrerequisiteState {
         KubectlBundled = Test-Path -LiteralPath (Join-Path $script:PayloadRoot 'kubectl.exe')
     }
 }
+function Get-SetupView($State, [bool]$RestartRequired = $false) {
+    if ($RestartRequired) { return @{ Phase = 'restart'; Title = 'Осталось перезагрузить Windows'; Text = 'Компоненты установлены. Перезагрузите Windows, затем откройте KubeLab. Если подготовка не завершится, выберите «Помощь» → «Проверить установленные компоненты».' } }
+    $installed = $State.WslReady -and [bool]$State.DockerDesktop -and $State.MinikubeBundled -and $State.KubectlBundled
+    if ($installed) {
+        $message = 'Все необходимые компоненты установлены. Можно закрыть это окно и перейти к первому уроку.'
+        if (-not $State.DockerEngineReady) { $message = 'Все необходимые компоненты установлены. Перед работой со своим кластером откройте Docker Desktop и дождитесь запуска Linux containers. Устанавливать программы заново не нужно.' }
+        return @{ Phase = 'complete'; Title = 'Все компоненты установлены'; Text = $message }
+    }
+    return @{ Phase = 'missing'; Title = 'Нужно установить недостающие компоненты'; Text = 'Ниже показан результат проверки. Установленные программы сохранятся. Docker Desktop можно скачать с официального сайта; остальные компоненты входят в KubeLab.' }
+}
 if ($LibraryOnly) { return }
 if ($Inspect) { Get-PrerequisiteState | ConvertTo-Json -Compress; exit 0 }
 
@@ -109,6 +119,7 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
 $script:Busy = $false
+$script:RestartRequired = $false
 $form = New-Object Windows.Forms.Form
 $form.Text = 'KubeLab — подготовка системы'; $form.ClientSize = New-Object Drawing.Size(750, 600)
 $form.StartPosition = 'CenterScreen'; $form.Font = New-Object Drawing.Font('Segoe UI', 10)
@@ -144,7 +155,28 @@ function Show-State {
     $wslText = if ($script:State.WslReady) { "установлен, $($script:State.WslVersion)" } else { 'требуется установка или обновление' }
     $dockerText = if ($script:State.DockerDesktop) { 'установлен — повторная установка не нужна' } else { 'отсутствует — доступно скачивание' }
     $engineText = if ($script:State.DockerEngineReady) { 'работает в режиме Linux containers' } else { 'не готов; запустите Docker Desktop и выберите Linux containers' }
-    $status.Text = "Windows build: $($script:State.Build)`r`nWSL 2: $wslText`r`nDocker Desktop: $dockerText`r`nDocker Engine: $engineText`r`nMinikube: встроенная версия $((Get-Package 'minikube').version)`r`nkubectl: встроенная версия $((Get-Package 'kubectl').version)"
+    $minikubeText = if ($script:State.MinikubeBundled) { "установлен в составе KubeLab, $((Get-Package 'minikube').version)" } else { 'файл не найден; переустановите KubeLab' }
+    $kubectlText = if ($script:State.KubectlBundled) { "установлен в составе KubeLab, $((Get-Package 'kubectl').version)" } else { 'файл не найден; переустановите KubeLab' }
+    $status.Text = "WSL 2: $wslText`r`nDocker Desktop: $dockerText`r`nDocker Engine: $engineText`r`nMinikube: $minikubeText`r`nkubectl: $kubectlText"
+    Set-SetupPresentation
+}
+function Set-SetupPresentation {
+    if (-not $script:State) { return }
+    $view = Get-SetupView $script:State $script:RestartRequired
+    $title.Text = $view.Title; $intro.Text = $view.Text
+    $finished = $view.Phase -ne 'missing'
+    foreach ($control in @($download, $link, $note, $installButton, $refreshButton)) { $control.Visible = -not $finished }
+    if ($finished) {
+        $form.ClientSize = New-Object Drawing.Size(750, 410)
+        $status.Size = New-Object Drawing.Size(700, 180)
+        $closeButton.Location = New-Object Drawing.Point(545, 345)
+        $form.AcceptButton = $closeButton; $form.CancelButton = $closeButton
+    } else {
+        $form.ClientSize = New-Object Drawing.Size(750, 600)
+        $status.Size = New-Object Drawing.Size(700, 200)
+        $closeButton.Location = New-Object Drawing.Point(545, 520)
+        $form.AcceptButton = $installButton; $form.CancelButton = $closeButton
+    }
 }
 function Wait-VisibleProcess($Process) {
     while (-not $Process.HasExited) { [Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 150; $Process.Refresh() }
@@ -155,6 +187,7 @@ $installButton.Add_Click({
     $script:Busy = $true; $installButton.Enabled = $false; $refreshButton.Enabled = $false; $closeButton.Enabled = $false; $download.Enabled = $false
     try {
         Show-State
+        if ((Get-SetupView $script:State $script:RestartRequired).Phase -ne 'missing') { return }
         if (-not $script:State.X64 -or $script:State.Build -lt 19045 -or ($script:State.Build -ge 22000 -and $script:State.Build -lt 22631)) { throw 'Нужна Windows 10 x64 build 19045 или Windows 11 x64 build 22631 и выше. Windows Server не поддерживается.' }
         $os = Get-CimInstance Win32_OperatingSystem
         if ($os.ProductType -ne 1) { throw 'Docker Desktop не поддерживает Windows Server.' }
@@ -171,7 +204,8 @@ $installButton.Add_Click({
         $worker = Start-Process -FilePath (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -ArgumentList $arguments -Verb RunAs -WindowStyle Hidden -PassThru
         $code = Wait-VisibleProcess $worker
         if ($code -eq 3010 -or $code -eq 1641) {
-            [Windows.Forms.MessageBox]::Show('Компоненты WSL подготовлены. Перезагрузите Windows, затем откройте KubeLab → «Настройка системы» и продолжите. Автоматической перезагрузки не будет.', 'Нужна перезагрузка') | Out-Null
+            $script:RestartRequired = $true
+            Set-SetupPresentation
             return
         }
         if ($code -ne 0) { throw "Настройка WSL не завершена (код $code). Журнал: $env:ProgramData\KubeLab\Setup\prerequisites.log. Если Windows требует исходники компонентов, добавьте их через обслуживание Windows." }
@@ -198,14 +232,11 @@ $installButton.Add_Click({
             $docker = Start-Process -FilePath $file -ArgumentList @('install', '--user', '--backend=wsl-2') -PassThru
             $dockerCode = Wait-VisibleProcess $docker
             if ($dockerCode -notin @(0, 3010, 1641)) { throw "Установщик Docker Desktop завершился с кодом $dockerCode." }
-            if ($dockerCode -in @(3010, 1641)) { [Windows.Forms.MessageBox]::Show('Для завершения установки Docker перезагрузите Windows.', 'Нужна перезагрузка') | Out-Null }
+            if ($dockerCode -in @(3010, 1641)) { $script:RestartRequired = $true }
         }
         Show-State
-        if ($script:State.DockerDesktop) {
-            $status.AppendText("`r`nКомпоненты установлены. Запустите Docker Desktop, примите его условия и дождитесь готовности Engine. Затем используйте реальный режим консоли.")
-        } else { $status.AppendText("`r`nDocker Desktop ещё не установлен. Используйте ссылку выше или включите скачивание. Тренажёр доступен без Docker.") }
     } catch { [Windows.Forms.MessageBox]::Show($_.Exception.Message, 'Подготовка не завершена', 'OK', 'Warning') | Out-Null }
-    finally { $script:Busy = $false; $installButton.Enabled = $true; $refreshButton.Enabled = $true; $closeButton.Enabled = $true; $download.Enabled = $true }
+    finally { $script:Busy = $false; $installButton.Enabled = $true; $refreshButton.Enabled = $true; $closeButton.Enabled = $true; $download.Enabled = $true; Set-SetupPresentation }
 })
 $form.Add_FormClosing({ param($sender, $eventArgs) if ($script:Busy) { $eventArgs.Cancel = $true } })
 $form.Add_Shown({ Show-State })

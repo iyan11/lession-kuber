@@ -1,6 +1,6 @@
 {
   "name": "kubelab-windows",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "private": true,
   "main": "desktop/main.cjs",
   "author": "KubeLab",

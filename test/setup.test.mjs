@@ -26,3 +26,9 @@ test('Windows PowerShell 5 parses the actual installer and reads localized WSL v
   const result = spawnSync('C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ". './setup/Prerequisites.ps1' -LibraryOnly; if ((Get-VersionNumber 'WSL version: 2.7.10.0') -ne [version]'2.7.10.0') { exit 1 }; if ((Get-VersionNumber 'not installed') -ne [version]'0.0.0') { exit 2 }; Write-Output 'read-only helper test passed'"], { encoding: 'utf8', windowsHide: true });
   assert.equal(result.status, 0, result.stderr);
 });
+
+test('completed setup distinguishes installed software from a stopped Docker engine and pending reboot', { skip: process.platform !== 'win32' }, () => {
+  const code = ". './setup/Prerequisites.ps1' -LibraryOnly; $s=[pscustomobject]@{WslReady=$true;DockerDesktop='installed';DockerEngineReady=$false;MinikubeBundled=$true;KubectlBundled=$true}; $view=Get-SetupView $s; if($view.Phase -ne 'complete'){exit 1}; if((Get-SetupView $s $true).Phase -ne 'restart'){exit 2}; $s.WslReady=$false; if((Get-SetupView $s).Phase -ne 'missing'){exit 3}; Write-Output 'setup states passed'";
+  const result = spawnSync('C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', code], { encoding: 'utf8', windowsHide: true });
+  assert.equal(result.status, 0, result.stderr);
+});

@@ -8,7 +8,9 @@ const files = new Map([
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/lessons.js', ['lessons.js', 'text/javascript; charset=utf-8']],
-  ['/coach.js', ['coach.js', 'text/javascript; charset=utf-8']]
+  ['/coach.js', ['coach.js', 'text/javascript; charset=utf-8']],
+  ['/lesson-view.js', ['lesson-view.js', 'text/javascript; charset=utf-8']],
+  ['/help-view.js', ['help-view.js', 'text/javascript; charset=utf-8']]
 ]);
 let requests = 0;
 const started = Date.now();
