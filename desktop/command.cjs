@@ -1,0 +1,21 @@
+// CLI arguments, not PowerShell source. No shell interpolation is performed.
+const tools = new Set(['docker', 'minikube', 'kubectl']);
+function parseCommand(source) {
+  if (typeof source !== 'string' || !source.trim() || source.length > 4096) throw new Error('Введите команду длиной до 4096 символов.');
+  const tokens = []; let word = '', quote = '', active = false;
+  for (const char of source.trim()) {
+    if (quote) { if (char === quote) quote = ''; else word += char; active = true; continue; }
+    if (char === '"' || char === "'") { quote = char; active = true; }
+    else if (/\s/.test(char)) { if (active) { tokens.push(word); word = ''; active = false; } }
+    else if (/[|;&<>`\u0000-\u001f]/.test(char)) throw new Error('Выполняйте по одной команде. Конвейеры, перенаправления и PowerShell-выражения здесь не поддерживаются.');
+    else { word += char; active = true; }
+  }
+  if (quote) throw new Error('Не закрыта кавычка. Добавьте такую же кавычку в конце аргумента.');
+  if (active) tokens.push(word);
+  const executable = tokens.shift();
+  if (!tools.has(executable)) throw new Error('Доступны docker, minikube и kubectl. Команда help покажет справку.');
+  if (executable === 'kubectl' && tokens.includes('edit')) throw new Error('kubectl edit требует внешнего редактора. Используйте patch из урока или обычный PowerShell.');
+  if (tokens.some(x => /^--?(it|ti|i|t|interactive|tty|attach)(=|$)/.test(x))) throw new Error('Интерактивный ввод (-it/--tty) не поддерживается. Используйте kubectl exec … -- команду без -it.');
+  return { executable, args: tokens };
+}
+module.exports = { parseCommand };

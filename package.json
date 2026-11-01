@@ -1,0 +1,23 @@
+{
+  "name": "kubelab-windows",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "main": "desktop/main.cjs",
+  "author": "KubeLab",
+  "description": "Практикум Kubernetes, Docker и Minikube для Windows",
+  "type": "module",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": { "start": "electron .", "web": "node server.mjs", "test": "node --test", "fetch:offline": "node scripts/fetch-offline.mjs", "build:win": "node scripts/build.mjs" },
+  "devDependencies": { "electron": "45.2.1", "electron-builder": "26.18.0" },
+  "build": {
+    "appId": "local.kubelab.desktop",
+    "productName": "KubeLab",
+    "directories": { "output": "release" },
+    "files": ["desktop/**/*", "public/**/*", "package.json"],
+    "extraResources": [{ "from": ".lab", "to": "lab" }, { "from": "setup", "to": "setup" }, { "from": "payload", "to": "setup/payload", "filter": ["wsl.x64.msi", "minikube.exe", "kubectl.exe"] }],
+    "win": { "target": "nsis", "signAndEditExecutable": false },
+    "nsis": { "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "include": "setup/installer.nsh", "installerLanguages": ["ru_RU", "en_US"], "displayLanguageSelector": true, "deleteAppDataOnUninstall": false },
+    "compression": "store",
+    "artifactName": "KubeLab-Setup-${version}-${arch}.${ext}"
+  }
+}
