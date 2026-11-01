@@ -1,5 +1,15 @@
 const { contextBridge, ipcRenderer } = require('electron');
+async function questionCall(channel, input) {
+  const result = await ipcRenderer.invoke(channel, input);
+  if (!result.ok) throw new Error(result.message);
+  return result.value;
+}
 contextBridge.exposeInMainWorld('kubeDesktop', {
+  questionState: () => questionCall('questions:state'),
+  saveQuestionKey: input => questionCall('questions:save', input),
+  forgetQuestionKey: () => questionCall('questions:forget'),
+  askQuestion: input => questionCall('questions:ask', input),
+  cancelQuestion: () => ipcRenderer.invoke('questions:cancel'),
   run: command => ipcRenderer.invoke('cli:run', command),
   stop: () => ipcRenderer.invoke('cli:stop'),
   environment: () => ipcRenderer.invoke('environment'),

@@ -12,3 +12,27 @@
 @media(max-width:850px){.lab-grid{display:flex;flex-direction:column}.console-column{position:static;width:100%}.lesson-prose{width:100%}.page-heading h1{font-size:25px}.reading-section p{font-size:14px}}
 
 .console-column{max-height:calc(100vh - 36px);overflow-y:auto;scrollbar-width:thin}#output{height:clamp(180px,28vh,320px)}.page-heading h1{font-size:28px}@media(max-width:850px){.console-column{max-height:none;overflow:visible}}
+/* Questions are separate from the console: answers are plain text. */
+.question-open { width: 100%; padding: 12px; border: 1px solid #497b72; border-radius: 8px; background: #172d2a; color: #c6efe4; cursor: pointer; margin: 8px 0; }
+.questions-dialog { width: min(740px, calc(100vw - 48px)); max-height: 85vh; overflow: auto; padding: 26px; border: 1px solid #334155; border-radius: 14px; background: #101923; color: #d9e1ed; }
+.questions-dialog::backdrop { background: #000a; }
+.questions-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.questions-dialog h2 { margin: 0; font-size: 24px; }
+.questions-dialog p { line-height: 1.65; font-size: 14px; margin: 14px 0; }
+.questions-dialog details { padding: 14px; border: 1px solid #334155; border-radius: 8px; }
+.questions-dialog summary { cursor: pointer; }
+.questions-dialog label { display: block; margin: 10px 0; }
+.questions-dialog input, .questions-dialog textarea { box-sizing: border-box; width: 100%; padding: 12px; background: #0b1019; color: #e7edf4; border: 1px solid #526378; border-radius: 6px; font: inherit; }
+.questions-dialog select { box-sizing: border-box; width: 100%; padding: 10px; background: #0b1019; color: #e7edf4; border: 1px solid #526378; border-radius: 6px; }
+.questions-dialog .question-consent { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.6; }
+.questions-dialog input[type=checkbox] { width: auto; margin-top: 4px; flex-shrink: 0; }
+.questions-dialog textarea { resize: vertical; }
+.questions-dialog button { padding: 9px 14px; border: 1px solid #526378; border-radius: 6px; background: #1b2b3b; color: #e7edf4; cursor: pointer; }
+.questions-dialog button:disabled { opacity: .5; cursor: default; }
+.question-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+.questions-dialog .question-notice { color: #a7b8c9; }
+#questions-answer { white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; font-size: 15px; line-height: 1.8; margin: 0; }
+#questions-model { color: #a7b8c9; font-size: 12px; }
+#update-details { font-size: 16px; font-weight: 600; min-height: 24px; line-height: 1.6; }
+.updates-dialog button:disabled { opacity: .5; cursor: default; }
+.updates-dialog { max-height: 85vh; overflow: auto; }

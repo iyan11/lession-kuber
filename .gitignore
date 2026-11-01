@@ -1,6 +1,13 @@
 node_modules/
 *.log
 .env
+.env.*
+!.env.example
+questions-key.bin*
+questions-settings.bin*
+*.kubeconfig
+*.pfx
+*.p12
 release/
 .lab/
 payload/

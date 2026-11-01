@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage } = require('electron');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
 const os = require('node:os');
@@ -7,6 +7,8 @@ const { parseCommand } = require('./command.cjs');
 const { toolDirectories, resolveTool } = require('./tools.cjs');
 const { autoUpdater } = require('electron-updater');
 const { Updates } = require('./updates.cjs');
+const { Questions } = require('./questions.cjs');
+const { questionFetch } = require('./question-network.cjs');
 let win, child, killTimer;
 let setupChild;
 let workspace;
@@ -18,19 +20,32 @@ function stop() {
   child.kill();
   return true;
 }
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  const { lessons } = await import('../public/lessons.js');
+  const questions = new Questions({ file: path.join(app.getPath('userData'), 'questions-settings.bin'), legacyFile: path.join(app.getPath('userData'), 'questions-key.bin'), storage: safeStorage, lessons, fetcher: questionFetch });
+  app.on('before-quit', () => questions.cancel());
   workspace = app.isPackaged ? path.join(process.resourcesPath, 'lab') : path.resolve(__dirname, '..');
   const resources = app.isPackaged ? process.resourcesPath : path.resolve(__dirname, '..');
   const directories = toolDirectories(resources, app.isPackaged);
   win = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 680, title: 'KubeLab', backgroundColor: '#0b1019', autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https:\/\/(kubernetes\.io|minikube\.sigs\.k8s\.io|docs\.docker\.com)\//.test(url)) shell.openExternal(url);
+    if (/^https:\/\/(kubernetes\.io|minikube\.sigs\.k8s\.io|docs\.docker\.com)\//.test(url) || ['https://openrouter.ai/keys', 'https://openrouter.ai/settings/privacy', 'https://developers.sber.ru/docs/ru/gigachat/individuals-quickstart', 'https://developers.sber.ru/docs/ru/gigachat/certificates', 'https://developers.sber.ru/docs/ru/gigachat/tariffs/individual-tariffs', 'https://ollama.com/download/windows'].includes(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
   win.webContents.on('will-navigate', (event, url) => { if (url.split('#')[0] !== page) event.preventDefault(); });
   const updates = new Updates(autoUpdater, { packaged: app.isPackaged, version: app.getVersion(), canInstall: () => !child && !setupChild });
-  updates.on('state', state => { if (!win.isDestroyed()) win.webContents.send('updates:state', state); });
+  const questionResult = async action => { try { return { ok: true, value: await action() }; } catch (error) { return { ok: false, message: error.message }; } };
+  ipcMain.handle('questions:state', event => { requireTrusted(event); return questionResult(() => questions.state()); });
+  ipcMain.handle('questions:save', (event, input) => { requireTrusted(event); return questionResult(() => questions.saveKey(input)); });
+  ipcMain.handle('questions:forget', event => { requireTrusted(event); return questionResult(() => questions.forget()); });
+  ipcMain.handle('questions:ask', (event, input) => { requireTrusted(event); return questionResult(() => questions.ask(input)); });
+  ipcMain.handle('questions:cancel', event => { requireTrusted(event); return questions.cancel(); });
+  updates.on('state', state => {
+    if (win.isDestroyed()) return;
+    win.webContents.send('updates:state', state);
+    win.setProgressBar(state.status === 'downloading' ? (state.percent === null ? 2 : state.percent / 100) : state.status === 'installing' ? 2 : -1);
+  });
   ipcMain.handle('updates:state', event => { requireTrusted(event); return updates.state; });
   ipcMain.handle('updates:check', event => { requireTrusted(event); return updates.check(); });
   ipcMain.handle('updates:download', event => { requireTrusted(event); return updates.download(); });

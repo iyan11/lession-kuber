@@ -1,10 +1,13 @@
 import { renderLesson } from './lesson-view.js';
 import { renderHelp } from './help-view.js';
+import { setupQuestions } from './questions-view.js';
+import { setupUpdates } from './updates-view.js';
 import { lessons, prefix } from './lessons.js';
 import { suggest, simulate, createSimulation } from './coach.js';
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const desktop = window.kubeDesktop;
+const openQuestions = setupQuestions(desktop, () => ({ index: selected, title: lessons[selected].title }));
 let progress = [], selected = 0, mode = 'sim', busy = false, current = '', history = [], historyIndex = 0, sim = createSimulation(), outputBuffer = '', workspace = 'Папка проекта KubeLab';
 let log = [{ type: 'welcome', text: 'Здесь выполняются команды из урока.\n\nВключён тренажёр: команды не меняют ваш компьютер. Читайте шаги по порядку. Кнопка «Вставить» заполняет поле; Enter выполняет команду.' }];
 let hint = suggest('');
@@ -95,6 +98,10 @@ async function run(command) {
 function lessonPanel() { return renderLesson(lessons[selected], selected, lessons.length, progress.includes(selected)); }
 function consoleView() {
   $('#main').innerHTML = `<div class="page-heading"><div><div class="eyebrow">Урок ${selected + 1} из ${lessons.length}</div><h1>${escape(lessons[selected].title)}</h1><p>${escape(lessons[selected].goal)}</p></div></div><div class="lab-grid">${lessonPanel()}<div class="console-column"><section class="terminal"><div class="terminal-bar"><div class="dots"><i></i><i></i><i></i></div><span>Консоль</span><label class="mode-label"><select id="mode" aria-label="Режим консоли"><option value="sim">Тренажёр</option><option value="real" ${desktop ? '' : 'disabled'}>Реальные команды</option></select></label></div><div class="mode-banner" id="mode-banner"></div><div id="output" tabindex="0" role="log" aria-label="Вывод консоли" aria-live="off"></div><form id="console-form"><div class="input-line"><span>❯</span><input id="command" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Команда консоли" aria-describedby="syntax" placeholder="minikube status -p kubelab"><button id="run" type="submit">Выполнить ↵</button></div><div class="terminal-bottom"><span id="syntax"></span><button type="button" id="stop" disabled>■ Стоп</button></div></form></section><section id="hint" class="hint"></section><div class="workspace-line"><span>⌁</span><span id="workspace">${escape(workspace)}</span>${desktop ? '<button id="folder">Сменить папку</button>' : '<span>Браузерная версия · только тренажёр</span>'}</div><div class="quick-commands"><span>Проверка кластера</span><button data-insert="kubectl --context kubelab get nodes">Узлы кластера</button><button data-insert="minikube status -p kubelab">Статус кластера</button><button data-insert="${prefix} get pods">Pod</button><button data-insert="help">Справка</button></div></div></div>`;
+  const questionButton = document.createElement('button');
+  questionButton.className = 'question-open'; questionButton.textContent = 'Вопрос по уроку';
+  questionButton.onclick = openQuestions;
+  $('.quick-commands').before(questionButton);
   $('#mode').value = mode; updateModeBanner(); drawLog(); drawHint(); updateSyntax(); setBusy(busy);
   $('#console-form').addEventListener('submit', event => { event.preventDefault(); run($('#command').value); });
   $('#command').addEventListener('input', updateSyntax);
@@ -160,26 +167,5 @@ desktop?.onOutput(value => {
   hint = commandHint(current, outputBuffer); drawHint();
 });
 route();
-if (desktop) {
-  const updateButton = document.createElement('button'); updateButton.className = 'setup-button'; updateButton.textContent = 'Обновления';
-  const updateDialog = document.createElement('dialog'); updateDialog.className = 'updates-dialog';
-  updateDialog.innerHTML = '<h2>Обновления KubeLab</h2><p id="update-version"></p><p id="update-message" role="status"></p><progress id="update-progress" max="100" value="0" hidden></progress><p class="update-note">При установке KubeLab закроется и откроется заново. Прогресс уроков сохранится. Повторно устанавливать остальные программы не нужно.</p><div class="update-actions"><button id="update-check">Проверить обновления</button><button id="update-download" hidden>Скачать</button><button id="update-install" hidden>Установить и перезапустить</button><button id="update-close">Закрыть</button></div>';
-  document.body.append(updateDialog);
-  const showUpdate = state => {
-    $('#update-version').textContent = `Установлена ${state.currentVersion}${state.version ? ' · новая ' + state.version : ''}`;
-    $('#update-message').textContent = state.message;
-    $('#update-progress').hidden = state.status !== 'downloading'; $('#update-progress').value = state.percent;
-    $('#update-check').disabled = ['checking', 'downloading', 'ready', 'installing', 'disabled'].includes(state.status);
-    $('#update-download').hidden = state.status !== 'available'; $('#update-install').hidden = state.status !== 'ready';
-    updateButton.textContent = ['available', 'ready'].includes(state.status) ? 'Обновление доступно ●' : 'Обновления';
-  };
-  const updateAction = async fn => { try { showUpdate(await fn()); } catch (error) { $('#update-message').textContent = error.message; } };
-  updateButton.onclick = () => { updateDialog.showModal(); updateAction(desktop.updateState); };
-  $('#update-close').onclick = () => updateDialog.close();
-  $('#update-check').onclick = () => updateAction(desktop.checkUpdates);
-  $('#update-download').onclick = () => updateAction(desktop.downloadUpdate);
-  $('#update-install').onclick = () => updateAction(desktop.installUpdate);
-  desktop.onUpdate(showUpdate); desktop.updateState().then(showUpdate).catch(() => {});
-  $('.topbar>div').prepend(updateButton);
-}
+setupUpdates(desktop);
 if (desktop) desktop.environment().then(info => { workspace = info.workspace; if ($('#workspace')) $('#workspace').textContent = workspace; });

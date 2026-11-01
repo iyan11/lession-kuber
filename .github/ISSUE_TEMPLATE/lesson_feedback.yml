@@ -1,0 +1,27 @@
+name: Ошибка или непонятное место в уроке
+description: Команда, объяснение, пример вывода или вопрос требуют исправления.
+body:
+  - type: input
+    id: lesson
+    attributes:
+      label: Урок и шаг
+      placeholder: Например, урок 3, шаг 2
+    validations:
+      required: true
+  - type: textarea
+    id: fragment
+    attributes:
+      label: Какой фрагмент непонятен или неверен
+      description: Приведите команду или короткий фрагмент текста и объясните затруднение.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Как можно объяснить лучше
+      description: Необязательно — предложите формулировку или пример.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Если команда не работает
+      description: Укажите версию KubeLab, режим консоли и сообщение ошибки без секретов.

@@ -1,7 +1,11 @@
 {
   "name": "kubelab-windows",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.6",
   "private": true,
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/iyan11/lession-kuber.git" },
+  "bugs": { "url": "https://github.com/iyan11/lession-kuber/issues" },
+  "homepage": "https://github.com/iyan11/lession-kuber#readme",
   "main": "desktop/main.cjs",
   "author": "KubeLab",
   "description": "Практикум Kubernetes и Minikube для Windows",
@@ -29,6 +33,7 @@
     "files": [
       "desktop/**/*",
       "public/**/*",
+      "LICENSE",
       "package.json"
     ],
     "extraResources": [

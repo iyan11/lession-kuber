@@ -1,0 +1,40 @@
+name: Ошибка в приложении
+description: Что-то не запускается или работает не так, как ожидалось.
+body:
+  - type: markdown
+    attributes:
+      value: Не прикладывайте API-ключи, kubeconfig, пароли и логи с секретами.
+  - type: input
+    id: version
+    attributes:
+      label: Версия KubeLab
+      placeholder: Например, 0.1.0-alpha.6
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Окружение
+      description: Версия Windows; установленное приложение или запуск из исходников; тренажёр или реальные команды. Для ошибки кластера укажите версии Docker и Minikube.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Как повторить
+      description: По шагам — что открыть, какую команду ввести, какую кнопку нажать.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ожидаемый результат
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Что произошло
+      description: Текст ошибки или снимок экрана без секретов.
+    validations:
+      required: true

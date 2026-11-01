@@ -1,0 +1,25 @@
+name: Предложение
+description: Идея для приложения или нового урока.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какую задачу нужно решить
+      description: Что сейчас неудобно или чего не хватает ученику?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Что предлагаете
+      description: Опишите пример использования и результат.
+    validations:
+      required: true
+  - type: dropdown
+    id: participation
+    attributes:
+      label: Хотите помочь с реализацией?
+      options:
+        - Пока только предлагаю
+        - Могу проверить результат
+        - Хочу подготовить pull request
