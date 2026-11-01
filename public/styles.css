@@ -36,3 +36,36 @@
 #update-details { font-size: 16px; font-weight: 600; min-height: 24px; line-height: 1.6; }
 .updates-dialog button:disabled { opacity: .5; cursor: default; }
 .updates-dialog { max-height: 85vh; overflow: auto; }
+
+/* Lesson chat */
+.questions-dialog[open] { display: flex; flex-direction: column; width: min(900px, calc(100vw - 32px)); height: min(860px, 92vh); max-height: 92vh; padding: 20px; gap: 10px; }
+.questions-heading { flex: none; }
+.questions-heading>div { display: flex; gap: 8px; }
+.questions-dialog #questions-lesson { margin: 0; color: #c0d7cc; }
+.questions-dialog .question-notice { margin: 0; font-size: 12px; line-height: 1.6; }
+.questions-dialog #questions-settings { margin: 0; padding: 10px 12px; flex: none; max-height: 36vh; overflow: auto; }
+.questions-dialog #questions-settings summary { font-size: 13px; }
+.questions-dialog #questions-state { font-size: 12px; margin: 0; line-height: 1.5; }
+.questions-messages { flex: 1; min-height: 150px; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; padding: 16px; background: #0a121b; border: 1px solid #2b3c4d; border-radius: 10px; scrollbar-width: thin; }
+.chat-empty { margin: auto; max-width: 420px; color: #a3b5c7; font-size: 14px; line-height: 1.8; text-align: center; }
+.chat-message { flex-shrink: 0; max-width: 90%; padding: 12px 15px; border: 1px solid #2c4053; border-radius: 12px; background: #142130; overflow-wrap: anywhere; }
+.chat-user { align-self: flex-end; background: #1d3830; border-color: #3c6656; }
+.chat-assistant, .chat-error, .chat-waiting { align-self: flex-start; }
+.chat-author { display: block; margin-bottom: 6px; font-size: 12px; color: #9bd4bc; }
+.chat-prose { white-space: pre-wrap; font-size: 14px; line-height: 1.8; }
+.chat-prose code { color: #c9eddd; background: #0a121b; border-radius: 3px; padding: 1px 4px; font: 12px/1.7 Consolas, monospace; }
+.chat-code { margin: 10px 0; padding: 12px; background: #080f17; border: 1px solid #2b3e4f; border-radius: 6px; font: 12px/1.8 Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; color: #c3e8d8; }
+.chat-model { display: block; color: #8fa3b8; font-size: 10px; margin-top: 8px; }
+.chat-error { border-color: #80504e; background: #302022; }
+.chat-error .chat-author { color: #f0b1a9; }
+.chat-error button { margin-top: 10px; }
+.chat-waiting { color: #9eb3c7; }
+.questions-dialog #questions-result-state { margin: 0; font-size: 12px; }
+.questions-dialog #questions-result-state:empty { display: none; }
+.questions-dialog #questions-form { flex: none; }
+.questions-dialog #questions-form label { margin: 0 0 7px; font-size: 13px; }
+.questions-dialog #questions-input { min-height: 70px; max-height: 150px; font-size: 14px; }
+.questions-dialog .question-actions { align-items: center; margin: 8px 0 0; }
+.questions-dialog .question-actions>span { flex: 1; color: #91a5b9; font-size: 11px; }
+.questions-dialog .chat-footnote { color: #8fa3b8; font-size: 11px; line-height: 1.5; margin: 0; }
+@media(max-width:600px) { .questions-dialog[open] { padding: 12px; gap: 8px; } .questions-heading h2 { font-size: 20px; } .questions-heading button { padding: 7px; font-size: 11px; } .chat-message { max-width: 96%; } .questions-dialog .question-actions>span { flex-basis: 100%; } }

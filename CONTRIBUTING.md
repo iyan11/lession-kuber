@@ -50,7 +50,7 @@ pnpm run web
 | Отображение урока | `public/lesson-view.js` |
 | Интерфейс, стили и консоль | `public/app.js`, `public/styles.css` |
 | Тренажёр и подсказки по ошибкам | `public/coach.js` |
-| Вопросы к модели и настройки подключения | `public/questions-view.js`, `desktop/questions.cjs` |
+| Чат по уроку и настройки подключения | `public/questions-view.js`, `public/chat-history.js`, `desktop/questions.cjs` |
 | Доступ к внешним API | `desktop/question-network.cjs` |
 | CLI, IPC и окно приложения | `desktop/main.cjs`, `desktop/preload.cjs`, `desktop/command.cjs` |
 | Обновления | `desktop/updates.cjs`, `public/updates-view.js` |
