@@ -155,5 +155,25 @@ if (desktop) {
   const button = document.createElement('button'); button.className = 'setup-button'; button.textContent = 'Настройка системы';
   button.onclick = async () => { try { const result = await desktop.openSetup(); notify(result.started ? 'Открываем мастер подготовки системы' : 'Мастер подготовки уже открыт'); } catch (error) { notify(error.message); } };
   $('.topbar>div').prepend(button);
+  const updateButton = document.createElement('button'); updateButton.className = 'setup-button'; updateButton.textContent = 'Обновления';
+  const updateDialog = document.createElement('dialog'); updateDialog.className = 'updates-dialog';
+  updateDialog.innerHTML = '<h2>Обновления KubeLab</h2><p id="update-version"></p><p id="update-message" role="status"></p><progress id="update-progress" max="100" value="0" hidden></progress><p class="update-note">Загрузка — после нажатия кнопки. Установка перезапустит приложение. Компоненты WSL, Docker, Minikube и kubectl повторно не устанавливаются. Дифференциальная загрузка может быть заменена полной, если старые блоки недоступны.</p><div class="update-actions"><button id="update-check">Проверить обновления</button><button id="update-download" hidden>Скачать</button><button id="update-install" hidden>Установить и перезапустить</button><button id="update-close">Закрыть</button></div>';
+  document.body.append(updateDialog);
+  const showUpdate = state => {
+    $('#update-version').textContent = `Установлена ${state.currentVersion}${state.version ? ' · новая ' + state.version : ''}`;
+    $('#update-message').textContent = state.message;
+    $('#update-progress').hidden = state.status !== 'downloading'; $('#update-progress').value = state.percent;
+    $('#update-check').disabled = ['checking', 'downloading', 'ready', 'installing', 'disabled'].includes(state.status);
+    $('#update-download').hidden = state.status !== 'available'; $('#update-install').hidden = state.status !== 'ready';
+    updateButton.textContent = ['available', 'ready'].includes(state.status) ? 'Обновление доступно ●' : 'Обновления';
+  };
+  const updateAction = async fn => { try { showUpdate(await fn()); } catch (error) { $('#update-message').textContent = error.message; } };
+  updateButton.onclick = () => { updateDialog.showModal(); updateAction(desktop.updateState); };
+  $('#update-close').onclick = () => updateDialog.close();
+  $('#update-check').onclick = () => updateAction(desktop.checkUpdates);
+  $('#update-download').onclick = () => updateAction(desktop.downloadUpdate);
+  $('#update-install').onclick = () => updateAction(desktop.installUpdate);
+  desktop.onUpdate(showUpdate); desktop.updateState().then(showUpdate).catch(() => {});
+  $('.topbar>div').prepend(updateButton);
 }
 if (desktop) desktop.environment().then(info => { workspace = info.workspace; if ($('#workspace')) $('#workspace').textContent = workspace; });

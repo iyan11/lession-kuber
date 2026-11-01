@@ -3,3 +3,5 @@
 .output-error{color:#ffa3a3;background:#642d362b;border-bottom:1px dotted #914b55}
 
 .setup-button{background:#20372f;border:1px solid #426955;border-radius:5px;color:#a9e7c7;padding:7px 10px;font-size:11px}
+
+.updates-dialog{width:min(560px,90vw);border:1px solid #426955;border-radius:12px;background:#14202b;color:#e8eef6;padding:28px}.updates-dialog::backdrop{background:#0009}.updates-dialog h2{font-size:23px}.updates-dialog progress{width:100%;accent-color:#8ee5c1}.updates-dialog .update-note{font-size:11px;line-height:1.7}.update-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:20px}.update-actions button{border:1px solid #426955;border-radius:5px;background:#20372f;color:#b8ecd6;padding:10px;font-size:12px}.update-actions [hidden]{display:none}

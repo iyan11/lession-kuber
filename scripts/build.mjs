@@ -29,4 +29,12 @@ const builder = path.join(path.dirname(require.resolve('electron-builder/package
 const electronDist = path.dirname(require('electron'));
 const child = spawn(process.execPath, [builder, '--win', 'nsis', '--x64', '--publish', 'never', `--config.electronDist=${electronDist}`], { cwd: root, stdio: 'inherit', windowsHide: true });
 child.on('error', error => { console.error(error.message); process.exitCode = 1; });
-child.on('exit', code => { process.exitCode = code ?? 1; });
+child.on('exit', async code => {
+  process.exitCode = code ?? 1;
+  if (code !== 0) return;
+  try {
+    const { version } = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+    const channel = version.match(/-(alpha|beta)(?:\.|$)/)?.[1];
+    if (channel) await cp(path.join(root, 'release/latest.yml'), path.join(root, `release/${channel}.yml`));
+  } catch (error) { console.error(error.message); process.exitCode = 1; }
+});

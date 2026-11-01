@@ -5,6 +5,8 @@ const os = require('node:os');
 const { pathToFileURL } = require('node:url');
 const { parseCommand } = require('./command.cjs');
 const { toolDirectories, resolveTool } = require('./tools.cjs');
+const { autoUpdater } = require('electron-updater');
+const { Updates } = require('./updates.cjs');
 let win, child, killTimer;
 let setupChild;
 let workspace;
@@ -27,6 +29,16 @@ app.whenReady().then(() => {
     return { action: 'deny' };
   });
   win.webContents.on('will-navigate', (event, url) => { if (url.split('#')[0] !== page) event.preventDefault(); });
+  const updates = new Updates(autoUpdater, { packaged: app.isPackaged, version: app.getVersion(), canInstall: () => !child && !setupChild });
+  updates.on('state', state => { if (!win.isDestroyed()) win.webContents.send('updates:state', state); });
+  ipcMain.handle('updates:state', event => { requireTrusted(event); return updates.state; });
+  ipcMain.handle('updates:check', event => { requireTrusted(event); return updates.check(); });
+  ipcMain.handle('updates:download', event => { requireTrusted(event); return updates.download(); });
+  ipcMain.handle('updates:install', event => { requireTrusted(event); return updates.install(); });
+  if (app.isPackaged) {
+    setTimeout(() => updates.check(), 10000).unref();
+    setInterval(() => updates.check(), 6 * 60 * 60 * 1000).unref();
+  }
   ipcMain.handle('environment', event => { requireTrusted(event); return { workspace, platform: os.platform(), desktop: true }; });
   ipcMain.handle('workspace:choose', async event => {
     requireTrusted(event);

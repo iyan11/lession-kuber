@@ -5,6 +5,15 @@ contextBridge.exposeInMainWorld('kubeDesktop', {
   environment: () => ipcRenderer.invoke('environment'),
   chooseFolder: () => ipcRenderer.invoke('workspace:choose'),
   openSetup: () => ipcRenderer.invoke('setup:open'),
+  updateState: () => ipcRenderer.invoke('updates:state'),
+  checkUpdates: () => ipcRenderer.invoke('updates:check'),
+  downloadUpdate: () => ipcRenderer.invoke('updates:download'),
+  installUpdate: () => ipcRenderer.invoke('updates:install'),
+  onUpdate: callback => {
+    const listener = (_event, value) => callback(value);
+    ipcRenderer.on('updates:state', listener);
+    return () => ipcRenderer.removeListener('updates:state', listener);
+  },
   onOutput: callback => {
     const listener = (_event, value) => callback(value);
     ipcRenderer.on('cli:output', listener);
