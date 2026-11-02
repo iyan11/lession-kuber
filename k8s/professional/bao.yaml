@@ -1,0 +1,129 @@
+apiVersion: "v1"
+kind: "ServiceAccount"
+metadata:
+  name: "deep-bao"
+  namespace: "kubelab-deep"
+automountServiceAccountToken: false
+---
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "ClusterRoleBinding"
+metadata:
+  name: "kubelab-deep-bao-reviewer"
+subjects:
+  -
+    kind: "ServiceAccount"
+    name: "deep-bao"
+    namespace: "kubelab-deep"
+roleRef:
+  apiGroup: "rbac.authorization.k8s.io"
+  kind: "ClusterRole"
+  name: "system:auth-delegator"
+---
+apiVersion: "v1"
+kind: "ConfigMap"
+metadata:
+  name: "bao-config"
+  namespace: "kubelab-deep"
+data:
+  server.hcl: "disable_mlock = true\n"
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "deep-bao"
+  namespace: "kubelab-deep"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "deep-bao"
+  template:
+    metadata:
+      labels:
+        app: "deep-bao"
+        kubelab.local/monitor: "yes"
+    spec:
+      automountServiceAccountToken: true
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "bao"
+          image: "openbao/openbao:2.7.2"
+          command:
+            - "bao"
+          args:
+            - "server"
+            - "-dev"
+            - "-dev-root-token-id=kubelab-fictional-root"
+            - "-dev-listen-address=0.0.0.0:8200"
+            - "-config=/config/server.hcl"
+          env:
+            -
+              name: "BAO_ADDR"
+              value: "http://127.0.0.1:8200"
+            -
+              name: "BAO_TOKEN"
+              value: "kubelab-fictional-root"
+            -
+              name: "HOME"
+              value: "/tmp"
+          ports:
+            -
+              containerPort: 8200
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "48Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          volumeMounts:
+            -
+              name: "config"
+              mountPath: "/config"
+              readOnly: true
+            -
+              name: "tmp"
+              mountPath: "/tmp"
+              readOnly: false
+          readinessProbe:
+            httpGet:
+              path: "/v1/sys/health"
+              port: 8200
+            periodSeconds: 2
+      volumes:
+        -
+          name: "config"
+          configMap:
+            name: "bao-config"
+        -
+          name: "tmp"
+          emptyDir:
+            sizeLimit: "32Mi"
+      serviceAccountName: "deep-bao"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "deep-bao"
+  namespace: "kubelab-deep"
+spec:
+  selector:
+    app: "deep-bao"
+  ports:
+    -
+      name: "http"
+      port: 8200
+      targetPort: 8200

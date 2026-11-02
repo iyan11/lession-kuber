@@ -12,3 +12,5 @@ release/
 .lab/
 payload/
 *.partial
+.lab-state/
+kubelab-backup.json

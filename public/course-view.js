@@ -6,7 +6,7 @@ export function renderCourse(lessons, progress, query = '') {
   const words = query.toLocaleLowerCase('ru').trim().split(/\s+/).filter(Boolean);
   lessons.forEach((lesson, index) => {
     const module = lesson.module || 'Основы Kubernetes';
-    const search = `${module} ${lesson.title} ${lesson.goal} ${lesson.tag}`.toLocaleLowerCase('ru');
+    const search = `${module} ${lesson.title} ${lesson.goal} ${lesson.tag} ${(lesson.deepSections||[]).flatMap(section=>section.topics.map(topic=>topic.title)).join(' ')}`.toLocaleLowerCase('ru');
     if (!words.every(word => search.includes(word))) return;
     if (!groups.has(module)) groups.set(module, []);
     groups.get(module).push({ lesson, index });

@@ -1,0 +1,91 @@
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "deep-lifecycle"
+  namespace: "kubelab-deep"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "deep-lifecycle"
+  template:
+    metadata:
+      labels:
+        app: "deep-lifecycle"
+        kubelab.local/monitor: "yes"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "web"
+          image: "kubelab:deep"
+          imagePullPolicy: "Never"
+          command:
+            - "node"
+            - "labs/lifecycle/app.mjs"
+          ports:
+            -
+              name: "http"
+              containerPort: 3000
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "48Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          env:
+            -
+              name: "APP_VERSION"
+              value: "blue"
+          startupProbe:
+            httpGet:
+              path: "/startup"
+              port: 3000
+            periodSeconds: 1
+            failureThreshold: 15
+          livenessProbe:
+            httpGet:
+              path: "/healthz"
+              port: 3000
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: "/readyz"
+              port: 3000
+            periodSeconds: 2
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - "node"
+                  - "-e"
+                  - "setTimeout(()=>{},2000)"
+      terminationGracePeriodSeconds: 15
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "deep-lifecycle"
+  namespace: "kubelab-deep"
+spec:
+  selector:
+    app: "deep-lifecycle"
+  ports:
+    -
+      name: "http"
+      port: 3000
+      targetPort: 3000

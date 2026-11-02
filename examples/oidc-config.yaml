@@ -1,0 +1,16 @@
+# Template for an administrator, not a kubectl apply object.
+# Replace issuer and audience only after preparing an actual HTTPS identity provider.
+# apiserver --authentication-config points to this file.
+apiVersion: apiserver.config.k8s.io/v1
+kind: AuthenticationConfiguration
+jwt:
+  - issuer:
+      url: https://identity.example.invalid/realms/learning
+      audiences: [kubelab-learning]
+    claimMappings:
+      username:
+        claim: sub
+        prefix: "learning:"
+      groups:
+        claim: groups
+        prefix: "learning:"

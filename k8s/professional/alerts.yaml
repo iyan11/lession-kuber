@@ -1,0 +1,105 @@
+apiVersion: "v1"
+kind: "ConfigMap"
+metadata:
+  name: "deep-alertmanager"
+  namespace: "kubelab-deep"
+data:
+  alertmanager.yaml: "global: {}\nroute:\n  receiver: learning-sink\n  group_by: [alertname]\n  group_wait: 5s\n  group_interval: 30s\n  repeat_interval: 1h\nreceivers:\n  - name: learning-sink\n"
+---
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  name: "deep-alertmanager"
+  namespace: "kubelab-deep"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "1Gi"
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "deep-alertmanager"
+  namespace: "kubelab-deep"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "deep-alertmanager"
+  template:
+    metadata:
+      labels:
+        app: "deep-alertmanager"
+        kubelab.local/monitor: "yes"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "alertmanager"
+          image: "prom/alertmanager:v0.28.1"
+          args:
+            - "--config.file=/etc/learning/alertmanager.yaml"
+            - "--storage.path=/data"
+          ports:
+            -
+              containerPort: 9093
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+          volumeMounts:
+            -
+              name: "config"
+              mountPath: "/etc/learning"
+              readOnly: true
+            -
+              name: "data"
+              mountPath: "/data"
+              readOnly: false
+          readinessProbe:
+            httpGet:
+              path: "/-/ready"
+              port: 9093
+            periodSeconds: 3
+            timeoutSeconds: 2
+      volumes:
+        -
+          name: "config"
+          configMap:
+            name: "deep-alertmanager"
+        -
+          name: "data"
+          persistentVolumeClaim:
+            claimName: "deep-alertmanager"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "deep-alertmanager"
+  namespace: "kubelab-deep"
+spec:
+  selector:
+    app: "deep-alertmanager"
+  ports:
+    -
+      name: "http"
+      port: 9093
+      targetPort: 9093

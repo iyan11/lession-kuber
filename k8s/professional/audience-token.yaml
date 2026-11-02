@@ -1,0 +1,59 @@
+apiVersion: "v1"
+kind: "ServiceAccount"
+metadata:
+  name: "deep-audience"
+  namespace: "kubelab-deep"
+automountServiceAccountToken: false
+---
+apiVersion: "v1"
+kind: "Pod"
+metadata:
+  name: "deep-audience"
+  namespace: "kubelab-deep"
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: "RuntimeDefault"
+  containers:
+    -
+      name: "client"
+      image: "kubelab:deep"
+      imagePullPolicy: "Never"
+      command:
+        - "node"
+        - "labs/telemetry/idle.mjs"
+      ports: []
+      resources:
+        requests:
+          cpu: "25m"
+          memory: "48Mi"
+        limits:
+          cpu: "500m"
+          memory: "256Mi"
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - "ALL"
+      volumeMounts:
+        -
+          name: "token"
+          mountPath: "/token"
+          readOnly: true
+  serviceAccountName: "deep-audience"
+  volumes:
+    -
+      name: "token"
+      projected:
+        sources:
+          -
+            serviceAccountToken:
+              audience: "kubelab-learning-service"
+              expirationSeconds: 600
+              path: "token"

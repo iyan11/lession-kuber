@@ -1,0 +1,24 @@
+apiVersion: "policies.kyverno.io/v1"
+kind: "NamespacedValidatingPolicy"
+metadata:
+  name: "kubelab-owner"
+  namespace: "kubelab-deep"
+spec:
+  validationActions:
+    - "Deny"
+  matchConstraints:
+    resourceRules:
+      -
+        apiGroups:
+          - "apps"
+        apiVersions:
+          - "v1"
+        operations:
+          - "CREATE"
+          - "UPDATE"
+        resources:
+          - "deployments"
+  validations:
+    -
+      expression: "has(object.metadata.labels) && 'owner' in object.metadata.labels"
+      message: "Учебный Deployment должен иметь metadata.labels.owner"

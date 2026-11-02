@@ -4,6 +4,7 @@ import { setupQuestions } from './questions-view.js';
 import { setupUpdates } from './updates-view.js';
 import { lessons, prefix } from './lessons.js';
 import { renderCourse } from './course-view.js';
+import { renderCoverage } from './coverage-view.js';
 import { suggest, simulate, createSimulation } from './coach.js';
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -82,6 +83,7 @@ async function run(command) {
   hint = commandHint(command); drawHint();
   try {
     if (mode === 'sim') {
+      if (lessons[selected].requiresReal || /kubelab-(deep|multi|upgrade|mesh|gitops|project)/.test(command)) throw new Error('Этот опыт требует настоящего отдельного стенда. Тренажёр не выполняет его и не подтверждает результат. В настольном приложении выберите «Реальные команды» после чтения подготовки.');
       await new Promise(resolve => setTimeout(resolve, 250));
       const result = simulate(command, sim); outputBuffer = result.text;
       append(result.code ? 'stderr' : 'stdout', result.text + '\n');
@@ -98,7 +100,9 @@ async function run(command) {
 }
 function lessonPanel() { return renderLesson(lessons[selected], selected, lessons.length, progress.includes(selected)); }
 function consoleView() {
-  $('#main').innerHTML = `<div class="page-heading"><div><div class="eyebrow">Урок ${selected + 1} из ${lessons.length}</div><h1>${escape(lessons[selected].title)}</h1><p>${escape(lessons[selected].goal)}</p></div></div><div class="lab-grid">${lessonPanel()}<div class="console-column"><section class="terminal"><div class="terminal-bar"><div class="dots"><i></i><i></i><i></i></div><span>Консоль</span><label class="mode-label"><select id="mode" aria-label="Режим консоли"><option value="sim">Тренажёр</option><option value="real" ${desktop ? '' : 'disabled'}>Реальные команды</option></select></label></div><div class="mode-banner" id="mode-banner"></div><div id="output" tabindex="0" role="log" aria-label="Вывод консоли" aria-live="off"></div><form id="console-form"><div class="input-line"><span>❯</span><input id="command" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Команда консоли" aria-describedby="syntax" placeholder="minikube status -p kubelab"><button id="run" type="submit">Выполнить ↵</button></div><div class="terminal-bottom"><span id="syntax"></span><button type="button" id="stop" disabled>■ Стоп</button></div></form></section><section id="hint" class="hint"></section><div class="workspace-line"><span>⌁</span><span id="workspace">${escape(workspace)}</span>${desktop ? '<button id="folder">Сменить папку</button>' : '<span>Браузерная версия · только тренажёр</span>'}</div><div class="quick-commands"><span>Проверка кластера</span><button data-insert="kubectl --context kubelab get nodes">Узлы кластера</button><button data-insert="minikube status -p kubelab">Статус кластера</button><button data-insert="${prefix} get pods">Pod</button><button data-insert="help">Справка</button></div></div></div>`;
+  const profile=lessons[selected].context||'kubelab';
+  const selectedPrefix='kubectl --context '+profile+' -n '+(lessons[selected].namespace||'kubelab');
+  $('#main').innerHTML = `<div class="page-heading"><div><div class="eyebrow">Урок ${selected + 1} из ${lessons.length}</div><h1>${escape(lessons[selected].title)}</h1><p>${escape(lessons[selected].goal)}</p></div></div><div class="lab-grid">${lessonPanel()}<div class="console-column"><section class="terminal"><div class="terminal-bar"><div class="dots"><i></i><i></i><i></i></div><span>Консоль</span><label class="mode-label"><select id="mode" aria-label="Режим консоли"><option value="sim">Тренажёр</option><option value="real" ${desktop ? '' : 'disabled'}>Реальные команды</option></select></label></div><div class="mode-banner" id="mode-banner"></div><div id="output" tabindex="0" role="log" aria-label="Вывод консоли" aria-live="off"></div><form id="console-form"><div class="input-line"><span>❯</span><input id="command" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Команда консоли" aria-describedby="syntax" placeholder="minikube status -p kubelab"><button id="run" type="submit">Выполнить ↵</button></div><div class="terminal-bottom"><span id="syntax"></span><button type="button" id="stop" disabled>■ Стоп</button></div></form></section><section id="hint" class="hint"></section><div class="workspace-line"><span>⌁</span><span id="workspace">${escape(workspace)}</span>${desktop ? '<button id="folder">Сменить папку</button>' : '<span>Браузерная версия · только тренажёр</span>'}</div><div class="quick-commands"><span>Проверка кластера</span><button data-insert="kubectl --context ${escape(profile)} get nodes">Узлы кластера</button><button data-insert="minikube status -p ${escape(profile)}">Статус кластера</button><button data-insert="${escape(selectedPrefix)} get pods">Pod</button><button data-insert="help">Справка</button></div></div></div>`;
   const questionButton = document.createElement('button');
   questionButton.className = 'question-open'; questionButton.textContent = 'Вопрос по уроку';
   questionButton.onclick = openQuestions;
@@ -130,9 +134,14 @@ function consoleView() {
     $('#finish').disabled = !correct;
   });
 }
-function updateModeBanner() { $('#mode-banner').textContent = mode === 'sim' ? '● Тренажёр · результаты смоделированы · реальный кластер не используется' : '● Реальный режим · команды выполняются на твоём компьютере'; $('#mode-banner').classList.toggle('real', mode === 'real'); }
+function updateModeBanner() { $('#mode-banner').textContent = mode === 'sim' ? (lessons[selected].requiresReal ? 'Для этого урока нужен отдельный реальный стенд. Тренажёр не исполняет эти команды.' : '● Тренажёр · результаты смоделированы · реальный кластер не используется') : `● Реальные команды · профиль ${lessons[selected].context||'kubelab'} · прочитайте подготовку`; $('#mode-banner').classList.toggle('real', mode === 'real'); }
+function coverageView() {
+  $('#main').innerHTML = `<div class="page-heading"><div><div class="eyebrow">Программа курса</div><h1>Карта тем</h1><p>Каждая ссылка открывает конкретное объяснение, пример и вопрос для самостоятельной проверки.</p><a href="#course">Вернуться к урокам</a></div></div><input id="coverage-search" class="search" type="search" placeholder="Найти тему…" aria-label="Поиск по карте тем"><div id="coverage-results">${renderCoverage(lessons)}</div>`;
+  $('#coverage-search').oninput=event=>{$('#coverage-results').innerHTML=renderCoverage(lessons,event.target.value);};
+}
 function courseView() {
   $('#main').innerHTML = `<div class="page-heading"><div><div class="eyebrow">Курс Kubernetes</div><h1>Уроки Kubernetes</h1><p>${lessons.length} занятий по модулям: от первого приложения до эксплуатации и собственной платформы. Читайте условия подготовки каждого опыта. Прежние номера уроков сохранены.</p></div></div><input id="course-search" class="search" type="search" aria-label="Найти урок" placeholder="Найти тему или модуль…"><div id="course-modules">${renderCourse(lessons, progress)}</div>`;
+  const coverageLink=document.createElement('a');coverageLink.href='#coverage';coverageLink.className='coverage-open';coverageLink.textContent='Карта тем и границы практики →';$('#course-search').before(coverageLink);
   $('#course-search').addEventListener('input', event => { $('#course-modules').innerHTML = renderCourse(lessons, progress, event.target.value); });
 }
 function mapView() {
@@ -153,7 +162,9 @@ function route() {
   const hash = location.hash || '#home';
   if (hash.startsWith('#lesson/')) { const value = Number(hash.split('/')[1]); selected = Number.isInteger(value) ? Math.max(0, Math.min(lessons.length - 1, value)) : 0; }
   document.querySelectorAll('[data-nav]').forEach(a => a.classList.toggle('active', a.dataset.nav === (hash === '#course' || hash.startsWith('#lesson') ? 'lesson' : hash.slice(1))));
-  if (hash === '#help') helpView(); else if (hash === '#map') mapView(); else if (hash === '#commands') commandsView(); else if (hash === '#course') courseView(); else consoleView();
+  if (hash === '#help') helpView(); else if (hash === '#map') mapView(); else if (hash === '#commands') commandsView(); else if (hash === '#course') courseView(); else if (hash === '#coverage') coverageView(); else consoleView();
+  const target=hash.match(/^#lesson\/\d+\/topic\/(deep-\d+-\d+)$/)?.[1];
+  if(target&&lessons[selected].deepSections?.some(section=>section.id===target)) document.getElementById(target)?.scrollIntoView({block:'start'});
   updateProgress();
 }
 document.querySelector('[data-nav="lesson"]').href = '#course';

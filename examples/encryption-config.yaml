@@ -1,0 +1,14 @@
+# Пример структуры. НЕ применять: unix-сокет требует отдельно установленного KMS v2 provider.
+# Файл нужен серверу управления, а не kubectl apply. После включения требуется
+# проверенная ротация существующих записей и восстановление вместе с ключами.
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources: [secrets]
+    providers:
+      - kms:
+          apiVersion: v2
+          name: learning-provider
+          endpoint: unix:///var/run/learning-kms/socket.sock
+          timeout: 3s
+      - identity: {}

@@ -1,0 +1,5 @@
+import { randomBytes,createCipheriv,createDecipheriv } from 'node:crypto';
+export function encrypt(key,bytes){const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key,iv);return {iv:iv.toString('base64'),ciphertext:Buffer.concat([cipher.update(bytes),cipher.final()]).toString('base64'),tag:cipher.getAuthTag().toString('base64')};}
+export function decrypt(key,value){const decipher=createDecipheriv('aes-256-gcm',key,Buffer.from(value.iv,'base64'));decipher.setAuthTag(Buffer.from(value.tag,'base64'));return Buffer.concat([decipher.update(Buffer.from(value.ciphertext,'base64')),decipher.final()]);}
+export function demo(){const wrappingKey=randomBytes(32),dataKey=randomBytes(32),message=Buffer.from('fictional-learning-value');const sealed=encrypt(dataKey,message),wrapped=encrypt(wrappingKey,dataKey);const restored=decrypt(decrypt(wrappingKey,wrapped),sealed);return {encryptedPayload:sealed,wrappedKey:wrapped,restored:restored.equals(message)};}
+if(process.argv[2]==='demo')console.log(JSON.stringify(demo(),null,2));

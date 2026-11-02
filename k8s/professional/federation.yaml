@@ -1,0 +1,107 @@
+apiVersion: "v1"
+kind: "ConfigMap"
+metadata:
+  name: "deep-global"
+  namespace: "kubelab-deep"
+data:
+  prometheus.yaml: "global:\n  scrape_interval: 15s\nscrape_configs:\n  - job_name: federation\n    honor_labels: true\n    metrics_path: /federate\n    params:\n      'match[]': ['{__name__=~\"kubelab_.*\"}']\n    static_configs:\n      - targets: ['deep-prometheus:9090']\n"
+---
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  name: "deep-global"
+  namespace: "kubelab-deep"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "1Gi"
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "deep-global"
+  namespace: "kubelab-deep"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "deep-global"
+  template:
+    metadata:
+      labels:
+        app: "deep-global"
+        kubelab.local/monitor: "yes"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "prometheus"
+          image: "prom/prometheus:v3.15.1"
+          args:
+            - "--config.file=/etc/learning/prometheus.yaml"
+            - "--storage.tsdb.path=/data"
+            - "--storage.tsdb.retention.time=2h"
+            - "--storage.tsdb.retention.size=200MB"
+          ports:
+            -
+              containerPort: 9090
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+          volumeMounts:
+            -
+              name: "config"
+              mountPath: "/etc/learning"
+              readOnly: true
+            -
+              name: "data"
+              mountPath: "/data"
+              readOnly: false
+          readinessProbe:
+            httpGet:
+              path: "/-/ready"
+              port: 9090
+            periodSeconds: 3
+            timeoutSeconds: 2
+      volumes:
+        -
+          name: "config"
+          configMap:
+            name: "deep-global"
+        -
+          name: "data"
+          persistentVolumeClaim:
+            claimName: "deep-global"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "deep-global"
+  namespace: "kubelab-deep"
+spec:
+  selector:
+    app: "deep-global"
+  ports:
+    -
+      name: "http"
+      port: 9090
+      targetPort: 9090

@@ -1,0 +1,130 @@
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  name: "etcd-backup"
+  namespace: "kubelab-deep"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "512Mi"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "etcd-peer"
+  namespace: "kubelab-deep"
+spec:
+  clusterIP: "None"
+  publishNotReadyAddresses: true
+  selector:
+    app: "etcd-demo"
+  ports:
+    -
+      name: "peer"
+      port: 2380
+    -
+      name: "client"
+      port: 2379
+---
+apiVersion: "apps/v1"
+kind: "StatefulSet"
+metadata:
+  name: "etcd-demo"
+  namespace: "kubelab-deep"
+spec:
+  serviceName: "etcd-peer"
+  replicas: 3
+  podManagementPolicy: "Parallel"
+  selector:
+    matchLabels:
+      app: "etcd-demo"
+  template:
+    metadata:
+      labels:
+        app: "etcd-demo"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "etcd"
+          image: "gcr.io/etcd-development/etcd:v3.6.6"
+          command:
+            - "etcd"
+          args:
+            - "--name=$(POD_NAME)"
+            - "--data-dir=/data/member"
+            - "--listen-client-urls=http://0.0.0.0:2379"
+            - "--advertise-client-urls=http://$(POD_NAME).etcd-peer:2379"
+            - "--listen-peer-urls=http://0.0.0.0:2380"
+            - "--initial-advertise-peer-urls=http://$(POD_NAME).etcd-peer:2380"
+            - "--initial-cluster=etcd-demo-0=http://etcd-demo-0.etcd-peer:2380,etcd-demo-1=http://etcd-demo-1.etcd-peer:2380,etcd-demo-2=http://etcd-demo-2.etcd-peer:2380"
+            - "--initial-cluster-token=kubelab-etcd-demo"
+          env:
+            -
+              name: "POD_NAME"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "metadata.name"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "96Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          ports:
+            -
+              name: "client"
+              containerPort: 2379
+            -
+              name: "peer"
+              containerPort: 2380
+          volumeMounts:
+            -
+              name: "data"
+              mountPath: "/data"
+              readOnly: false
+            -
+              name: "backup"
+              mountPath: "/backup"
+              readOnly: false
+          readinessProbe:
+            exec:
+              command:
+                - "etcdctl"
+                - "--endpoints=http://127.0.0.1:2379"
+                - "--command-timeout=1s"
+                - "endpoint"
+                - "health"
+            periodSeconds: 3
+            timeoutSeconds: 2
+      volumes:
+        -
+          name: "backup"
+          persistentVolumeClaim:
+            claimName: "etcd-backup"
+  volumeClaimTemplates:
+    -
+      metadata:
+        name: "data"
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "512Mi"

@@ -1,0 +1,161 @@
+apiVersion: "v1"
+kind: "ServiceAccount"
+metadata:
+  name: "deep-gateway"
+  namespace: "kubelab-deep"
+---
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "Role"
+metadata:
+  name: "deep-gateway"
+  namespace: "kubelab-deep"
+rules:
+  -
+    apiGroups:
+      - ""
+    resources:
+      - "services"
+      - "endpoints"
+      - "secrets"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+  -
+    apiGroups:
+      - "discovery.k8s.io"
+    resources:
+      - "endpointslices"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+  -
+    apiGroups:
+      - "networking.k8s.io"
+    resources:
+      - "ingresses"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+  -
+    apiGroups:
+      - "networking.k8s.io"
+    resources:
+      - "ingresses/status"
+    verbs:
+      - "update"
+---
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "RoleBinding"
+metadata:
+  name: "deep-gateway"
+  namespace: "kubelab-deep"
+subjects:
+  -
+    kind: "ServiceAccount"
+    name: "deep-gateway"
+    namespace: "kubelab-deep"
+roleRef:
+  apiGroup: "rbac.authorization.k8s.io"
+  kind: "Role"
+  name: "deep-gateway"
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "deep-gateway"
+  namespace: "kubelab-deep"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "deep-gateway"
+  template:
+    metadata:
+      labels:
+        app: "deep-gateway"
+        kubelab.local/monitor: "yes"
+    spec:
+      automountServiceAccountToken: true
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "gateway"
+          image: "traefik:v3.7.17"
+          args:
+            - "--entrypoints.web.address=:8000"
+            - "--entrypoints.websecure.address=:8443"
+            - "--providers.kubernetesingress=true"
+            - "--providers.kubernetesingress.namespaces=kubelab-deep"
+            - "--providers.kubernetesingress.ingressclass=kubelab-deep"
+            - "--providers.kubernetesingress.disableclusterscoperesources=true"
+            - "--accesslog=true"
+          ports:
+            -
+              name: "http"
+              containerPort: 8000
+            -
+              name: "https"
+              containerPort: 8443
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "48Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+      serviceAccountName: "deep-gateway"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "deep-gateway"
+  namespace: "kubelab-deep"
+spec:
+  selector:
+    app: "deep-gateway"
+  ports:
+    -
+      name: "http"
+      port: 8000
+      targetPort: 8000
+    -
+      name: "https"
+      port: 8443
+      targetPort: 8443
+---
+apiVersion: "networking.k8s.io/v1"
+kind: "Ingress"
+metadata:
+  name: "deep-route"
+  namespace: "kubelab-deep"
+  annotations:
+    kubernetes.io/ingress.class: "kubelab-deep"
+spec:
+  rules:
+    -
+      host: "localhost"
+      http:
+        paths:
+          -
+            path: "/"
+            pathType: "Prefix"
+            backend:
+              service:
+                name: "deep-web"
+                port:
+                  number: 3000

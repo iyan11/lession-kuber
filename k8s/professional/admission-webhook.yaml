@@ -1,0 +1,129 @@
+apiVersion: "cert-manager.io/v1"
+kind: "Certificate"
+metadata:
+  name: "deep-admission"
+  namespace: "kubelab-deep"
+spec:
+  secretName: "deep-admission-tls"
+  dnsNames:
+    - "deep-admission.kubelab-deep.svc"
+  issuerRef:
+    name: "learning-ca"
+    kind: "Issuer"
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "deep-admission"
+  namespace: "kubelab-deep"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "deep-admission"
+  template:
+    metadata:
+      labels:
+        app: "deep-admission"
+        kubelab.local/monitor: "yes"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "handler"
+          image: "kubelab:deep"
+          imagePullPolicy: "Never"
+          command:
+            - "node"
+            - "labs/admission/server.mjs"
+          ports:
+            -
+              containerPort: 8443
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "48Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          readinessProbe:
+            httpGet:
+              path: "/healthz"
+              port: 8443
+              scheme: "HTTPS"
+          volumeMounts:
+            -
+              name: "tls"
+              mountPath: "/tls"
+              readOnly: true
+      volumes:
+        -
+          name: "tls"
+          secret:
+            secretName: "deep-admission-tls"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "deep-admission"
+  namespace: "kubelab-deep"
+spec:
+  selector:
+    app: "deep-admission"
+  ports:
+    -
+      name: "http"
+      port: 443
+      targetPort: 8443
+---
+apiVersion: "admissionregistration.k8s.io/v1"
+kind: "MutatingWebhookConfiguration"
+metadata:
+  name: "deep-learning"
+  annotations:
+    cert-manager.io/inject-ca-from: "kubelab-deep/deep-admission"
+webhooks:
+  -
+    name: "learning.kubelab.local"
+    admissionReviewVersions:
+      - "v1"
+    sideEffects: "None"
+    failurePolicy: "Fail"
+    timeoutSeconds: 3
+    reinvocationPolicy: "IfNeeded"
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: "kubelab-deep"
+    objectSelector:
+      matchLabels:
+        kubelab.local/mutate: "yes"
+    clientConfig:
+      service:
+        name: "deep-admission"
+        namespace: "kubelab-deep"
+        path: "/mutate"
+        port: 443
+    rules:
+      -
+        apiGroups:
+          - ""
+        apiVersions:
+          - "v1"
+        operations:
+          - "CREATE"
+        resources:
+          - "pods"
+        scope: "Namespaced"

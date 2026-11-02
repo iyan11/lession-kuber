@@ -1,0 +1,8 @@
+apiVersion: "learning.kubelab.local/v1"
+kind: "Workshop"
+metadata:
+  name: "learning-example"
+  namespace: "kubelab-deep"
+spec:
+  name: "learning-artifact"
+  replicas: 1

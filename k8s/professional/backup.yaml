@@ -1,0 +1,145 @@
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  name: "deep-live"
+  namespace: "kubelab-deep"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "256Mi"
+---
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  name: "deep-backup"
+  namespace: "kubelab-deep"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "256Mi"
+---
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  name: "deep-recovery"
+  namespace: "kubelab-deep"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "256Mi"
+---
+apiVersion: "v1"
+kind: "Pod"
+metadata:
+  name: "deep-backup"
+  namespace: "kubelab-deep"
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: "RuntimeDefault"
+  containers:
+    -
+      name: "worker"
+      image: "kubelab:deep"
+      imagePullPolicy: "Never"
+      command:
+        - "node"
+        - "labs/telemetry/idle.mjs"
+      ports: []
+      resources:
+        requests:
+          cpu: "25m"
+          memory: "48Mi"
+        limits:
+          cpu: "500m"
+          memory: "256Mi"
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - "ALL"
+      volumeMounts:
+        -
+          name: "data"
+          mountPath: "/data"
+          readOnly: false
+        -
+          name: "backup"
+          mountPath: "/backup"
+          readOnly: false
+  volumes:
+    -
+      name: "data"
+      persistentVolumeClaim:
+        claimName: "deep-live"
+    -
+      name: "backup"
+      persistentVolumeClaim:
+        claimName: "deep-backup"
+---
+apiVersion: "v1"
+kind: "Pod"
+metadata:
+  name: "deep-recovery"
+  namespace: "kubelab-deep"
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: "RuntimeDefault"
+  containers:
+    -
+      name: "worker"
+      image: "kubelab:deep"
+      imagePullPolicy: "Never"
+      command:
+        - "node"
+        - "labs/telemetry/idle.mjs"
+      ports: []
+      resources:
+        requests:
+          cpu: "25m"
+          memory: "48Mi"
+        limits:
+          cpu: "500m"
+          memory: "256Mi"
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - "ALL"
+      volumeMounts:
+        -
+          name: "data"
+          mountPath: "/data"
+          readOnly: false
+        -
+          name: "backup"
+          mountPath: "/backup"
+          readOnly: true
+  volumes:
+    -
+      name: "data"
+      persistentVolumeClaim:
+        claimName: "deep-recovery"
+    -
+      name: "backup"
+      persistentVolumeClaim:
+        claimName: "deep-backup"

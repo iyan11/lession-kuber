@@ -1,0 +1,20 @@
+apiVersion: "cert-manager.io/v1"
+kind: "Issuer"
+metadata:
+  name: "learning-selfsigned"
+  namespace: "kubelab-deep"
+spec:
+  selfSigned: {}
+---
+apiVersion: "cert-manager.io/v1"
+kind: "Certificate"
+metadata:
+  name: "learning-ca"
+  namespace: "kubelab-deep"
+spec:
+  isCA: true
+  commonName: "KubeLab local learning CA"
+  secretName: "learning-ca"
+  issuerRef:
+    name: "learning-selfsigned"
+    kind: "Issuer"

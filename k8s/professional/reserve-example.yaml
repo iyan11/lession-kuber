@@ -1,0 +1,47 @@
+apiVersion: "scheduling.k8s.io/v1"
+kind: "PriorityClass"
+metadata:
+  name: "kubelab-reserve"
+value: -1000
+globalDefault: false
+preemptionPolicy: "Never"
+description: "Explicit low-priority learning reserve; does not add a node"
+---
+apiVersion: "v1"
+kind: "Pod"
+metadata:
+  name: "deep-reserve"
+  namespace: "kubelab-deep"
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: "RuntimeDefault"
+  containers:
+    -
+      name: "reserve"
+      image: "kubelab:deep"
+      imagePullPolicy: "Never"
+      command:
+        - "node"
+        - "labs/telemetry/idle.mjs"
+      ports: []
+      resources:
+        requests:
+          cpu: "25m"
+          memory: "48Mi"
+        limits:
+          cpu: "500m"
+          memory: "256Mi"
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - "ALL"
+      volumeMounts: []
+  priorityClassName: "kubelab-reserve"

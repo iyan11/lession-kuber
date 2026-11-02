@@ -7,3 +7,5 @@
 !lab-operator-model.mjs
 !public/
 !public/**
+!labs/
+!labs/**

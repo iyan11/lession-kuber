@@ -1,0 +1,129 @@
+apiVersion: "v1"
+kind: "ConfigMap"
+metadata:
+  name: "deep-grafana"
+  namespace: "kubelab-deep"
+data:
+  datasources.yaml: "apiVersion: 1\ndatasources:\n  - name: Learning metrics\n    type: prometheus\n    uid: learning-metrics\n    access: proxy\n    url: http://deep-prometheus:9090\n  - name: Learning traces\n    type: tempo\n    uid: learning-traces\n    access: proxy\n    url: http://deep-tempo:3200\n  - name: Learning logs\n    type: loki\n    uid: learning-logs\n    access: proxy\n    url: http://deep-loki:3100\n"
+---
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  name: "deep-grafana"
+  namespace: "kubelab-deep"
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "512Mi"
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "deep-grafana"
+  namespace: "kubelab-deep"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "deep-grafana"
+  template:
+    metadata:
+      labels:
+        app: "deep-grafana"
+        kubelab.local/monitor: "yes"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "grafana"
+          image: "grafana/grafana:13.3.0"
+          ports:
+            -
+              containerPort: 3000
+          env:
+            -
+              name: "GF_AUTH_ANONYMOUS_ENABLED"
+              value: "true"
+            -
+              name: "GF_AUTH_ANONYMOUS_ORG_ROLE"
+              value: "Viewer"
+            -
+              name: "GF_AUTH_DISABLE_LOGIN_FORM"
+              value: "true"
+            -
+              name: "GF_PATHS_DATA"
+              value: "/data"
+            -
+              name: "GF_PATHS_LOGS"
+              value: "/tmp/logs"
+            -
+              name: "GF_PATHS_PLUGINS"
+              value: "/data/plugins"
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "48Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          volumeMounts:
+            -
+              name: "data"
+              mountPath: "/data"
+              readOnly: false
+            -
+              name: "tmp"
+              mountPath: "/tmp"
+              readOnly: false
+            -
+              name: "provision"
+              mountPath: "/etc/grafana/provisioning/datasources"
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: "/api/health"
+              port: 3000
+            periodSeconds: 3
+            timeoutSeconds: 2
+      volumes:
+        -
+          name: "data"
+          persistentVolumeClaim:
+            claimName: "deep-grafana"
+        -
+          name: "tmp"
+          emptyDir:
+            sizeLimit: "32Mi"
+        -
+          name: "provision"
+          configMap:
+            name: "deep-grafana"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "deep-grafana"
+  namespace: "kubelab-deep"
+spec:
+  selector:
+    app: "deep-grafana"
+  ports:
+    -
+      name: "http"
+      port: 3000
+      targetPort: 3000

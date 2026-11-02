@@ -1,0 +1,10 @@
+import {foundations} from './foundations.js';
+import {operations} from './operations.js';
+import {storage} from './storage.js';
+import {network} from './network.js';
+import {secrets} from './secrets.js';
+import {admission} from './admission.js';
+import {observability} from './observability.js';
+import {identityPlatform} from './identity-platform.js';
+import {delivery} from './delivery.js';
+export const professionalLessons=[...foundations,...operations,...storage,...network,...secrets,...admission,...observability,...identityPlatform,...delivery].sort((a,b)=>a.number-b.number);

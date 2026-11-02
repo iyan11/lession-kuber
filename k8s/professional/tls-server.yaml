@@ -1,0 +1,54 @@
+apiVersion: "cert-manager.io/v1"
+kind: "Issuer"
+metadata:
+  name: "learning-ca"
+  namespace: "kubelab-deep"
+spec:
+  ca:
+    secretName: "learning-ca"
+---
+apiVersion: "cert-manager.io/v1"
+kind: "Certificate"
+metadata:
+  name: "deep-localhost"
+  namespace: "kubelab-deep"
+spec:
+  secretName: "deep-localhost"
+  dnsNames:
+    - "localhost"
+    - "deep-gateway"
+    - "deep-gateway.kubelab-deep.svc"
+  duration: "24h"
+  renewBefore: "8h"
+  privateKey:
+    rotationPolicy: "Always"
+  issuerRef:
+    name: "learning-ca"
+    kind: "Issuer"
+---
+apiVersion: "networking.k8s.io/v1"
+kind: "Ingress"
+metadata:
+  name: "deep-route"
+  namespace: "kubelab-deep"
+  annotations:
+    kubernetes.io/ingress.class: "kubelab-deep"
+spec:
+  rules:
+    -
+      host: "localhost"
+      http:
+        paths:
+          -
+            path: "/"
+            pathType: "Prefix"
+            backend:
+              service:
+                name: "deep-web"
+                port:
+                  number: 3000
+  tls:
+    -
+      hosts:
+        - "localhost"
+      secretName: "deep-localhost"

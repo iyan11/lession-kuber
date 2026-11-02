@@ -4,6 +4,7 @@ ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000
 COPY --chown=node:node package.json server.mjs ./
 COPY --chown=node:node lab-operator.mjs lab-operator-model.mjs ./
 COPY --chown=node:node public ./public
+COPY --chown=node:node labs ./labs
 USER node
 EXPOSE 3000
 CMD ["node", "server.mjs"]

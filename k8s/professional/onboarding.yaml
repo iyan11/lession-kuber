@@ -1,0 +1,49 @@
+apiVersion: "v1"
+kind: "Namespace"
+metadata:
+  name: "kubelab-project"
+  labels:
+    pod-security.kubernetes.io/enforce: "restricted"
+    pod-security.kubernetes.io/enforce-version: "v1.36"
+---
+apiVersion: "v1"
+kind: "ResourceQuota"
+metadata:
+  name: "budget"
+  namespace: "kubelab-project"
+spec:
+  hard:
+    pods: "4"
+    requests.cpu: "500m"
+    requests.memory: "512Mi"
+    limits.cpu: "2"
+    limits.memory: "1Gi"
+    services: "3"
+    persistentvolumeclaims: "2"
+---
+apiVersion: "v1"
+kind: "LimitRange"
+metadata:
+  name: "defaults"
+  namespace: "kubelab-project"
+spec:
+  limits:
+    -
+      type: "Container"
+      defaultRequest:
+        cpu: "25m"
+        memory: "48Mi"
+      default:
+        cpu: "500m"
+        memory: "256Mi"
+---
+apiVersion: "networking.k8s.io/v1"
+kind: "NetworkPolicy"
+metadata:
+  name: "default-deny"
+  namespace: "kubelab-project"
+spec:
+  podSelector: {}
+  policyTypes:
+    - "Ingress"
+    - "Egress"

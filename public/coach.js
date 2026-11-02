@@ -22,6 +22,7 @@ export function createSimulation() {
 }
 
 export function simulate(command, state) {
+  if (/kubelab-(deep|multi|upgrade|mesh|gitops|project)/.test(command)) return {code:1,text:'Этот опыт требует отдельного реального стенда. Тренажёр его не исполняет и не подтверждает результат.'};
   const cmd = command.trim();
   const advanced = simulateAdvanced(cmd, state);
   if (advanced !== null) return advanced;

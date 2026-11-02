@@ -24,6 +24,8 @@ const files = new Map([
   ['/updates-view.js', ['updates-view.js', 'text/javascript; charset=utf-8']],
   ['/chat-history.js', ['chat-history.js', 'text/javascript; charset=utf-8']]
 ]);
+for (const name of ['index','catalog','model','resources','foundations','operations','storage','network','secrets','admission','observability','identity-platform','delivery']) files.set(`/professional/${name}.js`, [`professional/${name}.js`, 'text/javascript; charset=utf-8']);
+files.set('/coverage-view.js', ['coverage-view.js', 'text/javascript; charset=utf-8']);
 let requests = 0;
 let observedRequests = 0, observedErrors = 0, observedDuration = 0;
 const started = Date.now();

@@ -1,0 +1,57 @@
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "deep-spread"
+  namespace: "kubelab-deep"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: "deep-spread"
+  template:
+    metadata:
+      labels:
+        app: "deep-spread"
+        kubelab.local/monitor: "yes"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "web"
+          image: "kubelab:deep"
+          imagePullPolicy: "Never"
+          command:
+            - "node"
+            - "labs/telemetry/app.mjs"
+          ports:
+            -
+              name: "http"
+              containerPort: 3000
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "48Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+      topologySpreadConstraints:
+        -
+          maxSkew: 1
+          topologyKey: "kubernetes.io/hostname"
+          whenUnsatisfiable: "DoNotSchedule"
+          labelSelector:
+            matchLabels:
+              app: "deep-spread"

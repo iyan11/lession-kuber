@@ -1,0 +1,111 @@
+apiVersion: "v1"
+kind: "Namespace"
+metadata:
+  name: "kubelab-deep"
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "deep-web"
+  namespace: "kubelab-deep"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "deep-web"
+  template:
+    metadata:
+      labels:
+        app: "deep-web"
+        kubelab.local/monitor: "yes"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "web"
+          image: "kubelab:deep"
+          imagePullPolicy: "Never"
+          command:
+            - "node"
+            - "labs/telemetry/app.mjs"
+          ports:
+            -
+              name: "http"
+              containerPort: 3000
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "48Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          readinessProbe:
+            httpGet:
+              path: "/readyz"
+              port: 3000
+            periodSeconds: 2
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "deep-web"
+  namespace: "kubelab-deep"
+spec:
+  selector:
+    app: "deep-web"
+  ports:
+    -
+      name: "http"
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: "v1"
+kind: "Pod"
+metadata:
+  name: "deep-client"
+  namespace: "kubelab-deep"
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: "RuntimeDefault"
+  containers:
+    -
+      name: "client"
+      image: "kubelab:deep"
+      imagePullPolicy: "Never"
+      command:
+        - "node"
+        - "labs/telemetry/idle.mjs"
+      ports: []
+      resources:
+        requests:
+          cpu: "25m"
+          memory: "48Mi"
+        limits:
+          cpu: "500m"
+          memory: "256Mi"
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - "ALL"
+      volumeMounts: []

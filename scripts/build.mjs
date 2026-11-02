@@ -16,14 +16,16 @@ for (const entry of payload.packages) {
 }
 const lab = path.join(root, '.lab');
 await mkdir(lab, { recursive: true });
-for (const name of ['public', 'k8s', 'charts', 'Dockerfile', '.dockerignore', 'server.mjs', 'lab-operator.mjs', 'lab-operator-model.mjs']) {
+for (const name of ['public', 'k8s', 'charts', 'labs', 'examples', 'Dockerfile', '.dockerignore', 'server.mjs', 'lab-operator.mjs', 'lab-operator-model.mjs']) {
   await cp(path.join(root, name), path.join(lab, name), { recursive: true });
 }
 await mkdir(path.join(lab, 'scripts'), { recursive: true });
 await cp(path.join(root, 'scripts/Start-Lab.ps1'), path.join(lab, 'scripts/Start-Lab.ps1'));
+await cp(path.join(root, 'scripts/Seal-LearningSecret.ps1'), path.join(lab, 'scripts/Seal-LearningSecret.ps1'));
 await cp(path.join(root, 'RUNNING.md'), path.join(lab, 'README.md'));
 await mkdir(path.join(lab, 'docs'), { recursive: true });
 await cp(path.join(root, 'docs/COURSE.md'), path.join(lab, 'docs/COURSE.md'));
+await cp(path.join(root, 'docs/COURSE_REVIEW.md'), path.join(lab, 'docs/COURSE_REVIEW.md'));
 await writeFile(path.join(lab, 'package.json'), JSON.stringify({ name: 'kubelab-workload', private: true, type: 'module', scripts: { start: 'node server.mjs', web: 'node server.mjs' } }, null, 2));
 // Stage lab resources separately so electron-builder cannot exclude the desktop
 // package.json as an overlapping extraResource.
