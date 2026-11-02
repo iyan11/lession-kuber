@@ -5,9 +5,12 @@ export function renderLesson(lesson, index, total, complete) {
     <div class="panel-label">Урок ${index + 1} из ${total} <span>Около ${lesson.minutes} минут</span></div>
     <nav class="reading-section lesson-contents" aria-label="Содержание урока"><h2>В этом уроке</h2><ul>${(lesson.sections || []).map((item, i) => `<li><a href="#theory-${i}" data-reading-target="theory-${i}">${esc(item.title)}</a></li>`).join('')}${lesson.manifestGuide ? '<li><a href="#manifest-0" data-reading-target="manifest-0">Подробный разбор манифеста</a></li>' : ''}${lesson.steps.map((item, i) => `<li><a href="#step-${i + 1}" data-reading-target="step-${i + 1}">Практика ${i + 1}: ${esc(item.title)}</a></li>`).join('')}</ul></nav>
     <section class="reading-section"><h2>Перед началом</h2><p>${esc(lesson.before)}</p></section>
+    ${lesson.id === 'helm' ? '<section class="reading-section"><p><a href="https://helm.sh/docs/intro/install/" target="_blank" rel="noreferrer">Официальная инструкция установки Helm</a>. Этот дополнительный компонент нужен только для реального выполнения команд данного занятия.</p></section>' : ''}
+    ${lesson.module ? `<section class="reading-section"><h2>Место в программе</h2><p>${esc(lesson.module)}. ${esc(lesson.practiceKind || 'Разбор и практический опыт')}. В тренажёре показана упрощённая модель: реальные версии, файлы компьютера, сеть и измерения не проверяются.</p></section>` : ''}
     <section class="reading-section"><h2>Что будем делать и зачем</h2>${lesson.introduction.map(p => `<p>${esc(p)}</p>`).join('')}</section>
     <section class="reading-section"><h2>Новые понятия</h2><dl class="terms">${lesson.terms.map(([term, meaning]) => `<dt>${esc(term)}</dt><dd>${esc(meaning)}</dd>`).join('')}</dl></section>
     ${sections(lesson.sections, 'theory')}
+    ${(lesson.examples || []).length ? `<section class="reading-section"><h2>Полные файлы этого опыта</h2><p>Эти файлы уже находятся в рабочей папке. Сначала прочитайте их и объяснения полей, затем выполняйте команды ниже. Это самостоятельные примеры, а не фрагменты для случайной вставки в основной манифест.</p>${lesson.examples.map(example => `<h3>${esc(example.path)}</h3><pre class="lesson-example">${esc(example.text)}</pre>`).join('')}</section>` : ''}
     ${lesson.imageGuide ? `<section class="reading-section image-guide" aria-label="Подготовка образа приложения">
       <h2>Из чего мы собираем образ</h2><p>${esc(lesson.imageGuide.introduction)}</p>
       <h3>Готовые файлы из комплекта KubeLab</h3><p>${esc(lesson.imageGuide.source)}</p><dl class="terms">${lesson.imageGuide.files.map(([name, meaning]) => `<dt><code>${esc(name)}</code></dt><dd>${esc(meaning)}</dd>`).join('')}</dl>
@@ -17,7 +20,7 @@ export function renderLesson(lesson, index, total, complete) {
     </section>` : ''}
     ${lesson.manifest ? `<section class="reading-section"><h2>Что записано в манифесте</h2><pre class="lesson-example">${esc(lesson.manifest)}</pre><p>${esc(lesson.manifestExplanation)}</p></section>` : ''}
     ${sections(lesson.manifestGuide, 'manifest')}
-    <section class="reading-section common-flags"><h2>Как читать команды kubectl</h2><p><code>--context kubelab</code> выбирает учебный кластер. <code>-n kubelab</code> выбирает namespace — область с объектами приложения внутри этого кластера. Эти параметры не являются частью действия: само действие находится дальше, например <code>get pods</code>.</p></section>
+    <section class="reading-section common-flags"><h2>Как читать команды</h2><p><code>--context ${esc(lesson.context || 'kubelab')}</code> выбирает указанный учебный кластер. <code>-n ${esc(lesson.namespace || 'kubelab')}</code> выбирает пространство имён для объектов приложения. Если отдельный шаг обращается к системным компонентам или другому профилю, в нём явно указаны другие значения. Проверяйте их перед выполнением. У Helm используется параметр <code>--kube-context</code>.</p></section>
     ${lesson.steps.map((step, i) => `<section class="reading-section lesson-step" id="step-${i + 1}">
       <h2><span class="step-index">${i + 1}.</span> ${esc(step.title)}</h2><p>${esc(step.why)}</p>
       <button class="command-card" data-insert="${esc(step.command)}" aria-label="Вставить команду ${esc(step.command)}"><code>${esc(step.command)}</code><span>Вставить</span></button>

@@ -1,0 +1,35 @@
+apiVersion: "apiextensions.k8s.io/v1"
+kind: "CustomResourceDefinition"
+metadata:
+  name: "labservices.training.kubelab.local"
+spec:
+  group: "training.kubelab.local"
+  scope: "Namespaced"
+  names:
+    plural: "labservices"
+    singular: "labservice"
+    kind: "LabService"
+    shortNames:
+      - "labsrv"
+  versions:
+    -
+      name: "v1"
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: "object"
+          properties:
+            spec:
+              type: "object"
+              required:
+                - "message"
+              properties:
+                message:
+                  type: "string"
+                  minLength: 1
+                replicas:
+                  type: "integer"
+                  minimum: 1
+                  maximum: 4
+                  default: 1

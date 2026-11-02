@@ -1,5 +1,5 @@
 // CLI arguments, not PowerShell source. No shell interpolation is performed.
-const tools = new Set(['docker', 'minikube', 'kubectl']);
+const tools = new Set(['docker', 'minikube', 'kubectl', 'helm']);
 function parseCommand(source) {
   if (typeof source !== 'string' || !source.trim() || source.length > 4096) throw new Error('Введите команду длиной до 4096 символов.');
   const tokens = []; let word = '', quote = '', active = false;
@@ -13,7 +13,7 @@ function parseCommand(source) {
   if (quote) throw new Error('Не закрыта кавычка. Добавьте такую же кавычку в конце аргумента.');
   if (active) tokens.push(word);
   const executable = tokens.shift();
-  if (!tools.has(executable)) throw new Error('Доступны docker, minikube и kubectl. Команда help покажет справку.');
+  if (!tools.has(executable)) throw new Error('Доступны docker, minikube, kubectl и дополнительно установленный helm. Команда help покажет справку.');
   const separator = tokens.indexOf('--');
   const options = separator < 0 ? tokens : tokens.slice(0, separator);
   if (executable === 'kubectl' && options.includes('edit')) throw new Error('kubectl edit требует внешнего редактора. Используйте patch из урока или обычный PowerShell.');

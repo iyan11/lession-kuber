@@ -1,0 +1,2 @@
+replicaCount: 1
+image: kubelab:1.0

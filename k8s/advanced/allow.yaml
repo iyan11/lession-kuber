@@ -1,0 +1,22 @@
+apiVersion: "networking.k8s.io/v1"
+kind: "NetworkPolicy"
+metadata:
+  name: "kubelab-web-ingress"
+  namespace: "kubelab"
+spec:
+  podSelector:
+    matchLabels:
+      app: "kubelab"
+  policyTypes:
+    - "Ingress"
+  ingress:
+    -
+      from:
+        -
+          podSelector:
+            matchLabels:
+              access: "web"
+      ports:
+        -
+          protocol: "TCP"
+          port: 3000

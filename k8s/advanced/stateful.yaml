@@ -1,0 +1,75 @@
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "kubelab-stateful"
+  namespace: "kubelab"
+spec:
+  clusterIP: "None"
+  selector:
+    app: "kubelab-stateful"
+  ports:
+    -
+      name: "http"
+      port: 3000
+      targetPort: "http"
+---
+apiVersion: "apps/v1"
+kind: "StatefulSet"
+metadata:
+  name: "kubelab-stateful"
+  namespace: "kubelab"
+spec:
+  serviceName: "kubelab-stateful"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "kubelab-stateful"
+  template:
+    metadata:
+      labels:
+        app: "kubelab-stateful"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "web"
+          image: "kubelab:1.0"
+          imagePullPolicy: "Never"
+          ports:
+            -
+              name: "http"
+              containerPort: 3000
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          volumeMounts:
+            -
+              name: "notes"
+              mountPath: "/data"
+  volumeClaimTemplates:
+    -
+      metadata:
+        name: "notes"
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "200Mi"

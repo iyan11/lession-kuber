@@ -30,7 +30,7 @@ app.whenReady().then(async () => {
   win = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 680, title: 'KubeLab', backgroundColor: '#0b1019', autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https:\/\/(kubernetes\.io|minikube\.sigs\.k8s\.io|docs\.docker\.com)\//.test(url) || ['https://openrouter.ai/keys', 'https://openrouter.ai/settings/privacy', 'https://developers.sber.ru/docs/ru/gigachat/individuals-quickstart', 'https://developers.sber.ru/docs/ru/gigachat/certificates', 'https://developers.sber.ru/docs/ru/gigachat/tariffs/individual-tariffs', 'https://ollama.com/download/windows'].includes(url)) shell.openExternal(url);
+    if (/^https:\/\/(kubernetes\.io|minikube\.sigs\.k8s\.io|docs\.docker\.com)\//.test(url) || ['https://helm.sh/docs/intro/install/', 'https://openrouter.ai/keys', 'https://openrouter.ai/settings/privacy', 'https://developers.sber.ru/docs/ru/gigachat/individuals-quickstart', 'https://developers.sber.ru/docs/ru/gigachat/certificates', 'https://developers.sber.ru/docs/ru/gigachat/tariffs/individual-tariffs', 'https://ollama.com/download/windows'].includes(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
   win.webContents.on('will-navigate', (event, url) => { if (url.split('#')[0] !== page) event.preventDefault(); });
@@ -91,7 +91,7 @@ app.whenReady().then(async () => {
         child.stdout.setEncoding('utf8'); child.stderr.setEncoding('utf8');
         child.stdout.on('data', text => send({ stream: 'stdout', text }));
         child.stderr.on('data', text => send({ stream: 'stderr', text }));
-        child.on('error', error => finish(1, error.code === 'ENOENT' ? `${executable} не найден в PATH. Установите инструмент и перезапустите KubeLab.` : error.message));
+        child.on('error', error => finish(1, error.code === 'ENOENT' ? (executable === 'helm' ? 'Helm не найден в PATH. Это дополнительный компонент занятия об упаковке. Установите его по официальной инструкции и перезапустите KubeLab.' : `${executable} не найден в PATH. Установите инструмент и перезапустите KubeLab.`) : error.message));
         child.on('close', code => finish(code ?? 1));
         killTimer = setTimeout(() => { send({ stream: 'stderr', text: '\nЛимит выполнения 15 минут. Команда остановлена; при необходимости запустите снова.\n' }); stop(); }, 15 * 60 * 1000);
       } catch (error) { finish(1, error.message); }

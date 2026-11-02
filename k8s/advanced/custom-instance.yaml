@@ -1,0 +1,8 @@
+apiVersion: "training.kubelab.local/v1"
+kind: "LabService"
+metadata:
+  name: "welcome"
+  namespace: "kubelab"
+spec:
+  message: "Hello from a custom resource"
+  replicas: 2

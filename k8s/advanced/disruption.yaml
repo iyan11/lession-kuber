@@ -1,0 +1,10 @@
+apiVersion: "policy/v1"
+kind: "PodDisruptionBudget"
+metadata:
+  name: "kubelab-availability"
+  namespace: "kubelab"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: "kubelab"

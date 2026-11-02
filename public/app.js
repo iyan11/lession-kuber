@@ -3,6 +3,7 @@ import { renderHelp } from './help-view.js';
 import { setupQuestions } from './questions-view.js';
 import { setupUpdates } from './updates-view.js';
 import { lessons, prefix } from './lessons.js';
+import { renderCourse } from './course-view.js';
 import { suggest, simulate, createSimulation } from './coach.js';
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -20,12 +21,12 @@ function commandHint(command, output = '') {
 try { const saved = JSON.parse(localStorage.getItem('kubelab-progress-v2') || '[]'); if (Array.isArray(saved)) progress = saved.filter(x => Number.isInteger(x) && x >= 0 && x < lessons.length); } catch {}
 function notify(text) { $('#toast').textContent = text; $('#toast').classList.add('show'); setTimeout(() => $('#toast').classList.remove('show'), 3000); }
 function save() { try { localStorage.setItem('kubelab-progress-v2', JSON.stringify([...new Set(progress)])); } catch { notify('Хранилище прогресса недоступно. В этой сессии прогресс сохранится.'); } }
-function updateProgress() { $('#side-count').textContent = `${new Set(progress).size} / ${lessons.length}`; $('#side-bar').style.width = `${new Set(progress).size / lessons.length * 100}%`; }
+function updateProgress() { if ($('#lesson-count')) $('#lesson-count').textContent = lessons.length; $('#side-count').textContent = `${new Set(progress).size} / ${lessons.length}`; $('#side-bar').style.width = `${new Set(progress).size / lessons.length * 100}%`; }
 function insert(command) { if (!$('#command')) { location.hash = '#home'; setTimeout(() => insert(command), 0); return; } $('#command').value = command; $('#command').focus({ preventScroll: true }); updateSyntax(); hint = commandHint(command); drawHint(); }
 function syntax(command) {
   if (!command.trim()) return '';
   if (/^minicube\b/.test(command)) return 'Опечатка: minikube пишется через k. Нажми на подсказку ниже.';
-  if (!/^(docker|minikube|kubectl|help|clear|history|reset)(\s|$)/.test(command)) return 'Неизвестная команда. Доступны docker, minikube, kubectl, help, clear, history, reset.';
+  if (!/^(docker|minikube|kubectl|helm|help|clear|history|reset)(\s|$)/.test(command)) return 'Неизвестная команда. Доступны docker, minikube, kubectl, helm, help, clear, history, reset.';
   const quotes = command.match(/"|'/g) || [];
   let open = ''; for (const c of quotes) { if (!open) open = c; else if (open === c) open = ''; }
   if (open) return `Не закрыта кавычка ${open}`;
@@ -131,7 +132,8 @@ function consoleView() {
 }
 function updateModeBanner() { $('#mode-banner').textContent = mode === 'sim' ? '● Тренажёр · результаты смоделированы · реальный кластер не используется' : '● Реальный режим · команды выполняются на твоём компьютере'; $('#mode-banner').classList.toggle('real', mode === 'real'); }
 function courseView() {
-  $('#main').innerHTML = `<div class="page-heading"><div><div class="eyebrow">Курс Kubernetes</div><h1>Уроки Kubernetes</h1><p>Проходите уроки по порядку: каждый использует результаты предыдущего. В командах работаем только с учебным кластером kubelab.</p></div></div><div class="lesson-list">${lessons.map((lesson, i) => `<a href="#lesson/${i}" class="lesson-tile"><span class="lesson-number">${progress.includes(i) ? '✓' : String(i + 1).padStart(2, '0')}</span><div><span class="eyebrow">${lesson.tag} · ${lesson.minutes} минут</span><h2>${escape(lesson.title)}</h2><p>${escape(lesson.goal)}</p></div><span>→</span></a>`).join('')}</div>`;
+  $('#main').innerHTML = `<div class="page-heading"><div><div class="eyebrow">Курс Kubernetes</div><h1>Уроки Kubernetes</h1><p>${lessons.length} занятий по модулям: от первого приложения до эксплуатации и собственной платформы. Читайте условия подготовки каждого опыта. Прежние номера уроков сохранены.</p></div></div><input id="course-search" class="search" type="search" aria-label="Найти урок" placeholder="Найти тему или модуль…"><div id="course-modules">${renderCourse(lessons, progress)}</div>`;
+  $('#course-search').addEventListener('input', event => { $('#course-modules').innerHTML = renderCourse(lessons, progress, event.target.value); });
 }
 function mapView() {
   $('#main').innerHTML = `<div class="page-heading"><div><div class="eyebrow">Справка</div><h1>Как устроен учебный кластер</h1><p>Это схема учебного стенда, а не обнаруженные ресурсы компьютера.</p></div></div><div class="architecture"><div class="arch-box windows"><b>Windows</b><span>KubeLab Desktop → CLI: docker / minikube / kubectl</span><div class="arch-box docker"><b>Docker Desktop · Linux containers</b><span>Запускает контейнер Node для Minikube</span><div class="arch-box cluster"><b>Minikube · профиль kubelab</b><span>Kubernetes API + Node</span><div class="arch-box namespace"><b>Namespace: kubelab</b><div class="flow"><div>Service<br><small>порт 80</small></div><span>→</span><div>Pod A<br><small>web :3000</small></div><div>Pod B<br><small>web :3000</small></div></div><p>Deployment → ReplicaSet → Pod<br>ConfigMap → LAB_MESSAGE → окружение контейнера</p></div></div></div></div><div class="callout"><h2>Как запрос попадает в приложение</h2><p>Браузер Windows → localhost:8081 → kubectl port-forward → выбранный Pod:3000. Команда с service/kubelab находит Pod через Service, но держит туннель к одной реплике.</p><h2>Что можно наблюдать</h2><p>GET /api/runtime возвращает имя Pod, namespace, версию, сообщение, время работы и счётчик запросов конкретного процесса. Счётчик сбрасывается при замене Pod. Прогресс уроков хранится локально в приложении.</p><button class="primary" data-insert="${prefix} get pods">Посмотреть Pod →</button></div></div>`;

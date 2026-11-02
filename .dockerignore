@@ -3,5 +3,7 @@
 !.dockerignore
 !package.json
 !server.mjs
+!lab-operator.mjs
+!lab-operator-model.mjs
 !public/
 !public/**

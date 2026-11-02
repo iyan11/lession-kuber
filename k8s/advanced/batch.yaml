@@ -1,0 +1,105 @@
+apiVersion: "batch/v1"
+kind: "Job"
+metadata:
+  name: "kubelab-report"
+  namespace: "kubelab"
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: "kubelab-report"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "report"
+          image: "kubelab:1.0"
+          imagePullPolicy: "Never"
+          ports:
+            -
+              name: "http"
+              containerPort: 3000
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          command:
+            - "node"
+            - "-e"
+          args:
+            - "console.log(JSON.stringify({report:'learning',rows:3}))"
+      restartPolicy: "Never"
+---
+apiVersion: "batch/v1"
+kind: "CronJob"
+metadata:
+  name: "kubelab-schedule"
+  namespace: "kubelab"
+spec:
+  schedule: "*/5 * * * *"
+  timeZone: "Etc/UTC"
+  suspend: true
+  concurrencyPolicy: "Forbid"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app: "kubelab-schedule"
+        spec:
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: "RuntimeDefault"
+          containers:
+            -
+              name: "report"
+              image: "kubelab:1.0"
+              imagePullPolicy: "Never"
+              ports:
+                -
+                  name: "http"
+                  containerPort: 3000
+              resources:
+                requests:
+                  cpu: "25m"
+                  memory: "32Mi"
+                limits:
+                  cpu: "200m"
+                  memory: "128Mi"
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - "ALL"
+              command:
+                - "node"
+                - "-e"
+              args:
+                - "console.log('scheduled report')"
+          restartPolicy: "Never"

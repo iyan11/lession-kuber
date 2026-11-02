@@ -1,0 +1,95 @@
+apiVersion: "v1"
+kind: "ServiceAccount"
+metadata:
+  name: "kubelab-operator"
+  namespace: "kubelab"
+---
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "Role"
+metadata:
+  name: "kubelab-operator"
+  namespace: "kubelab"
+rules:
+  -
+    apiGroups:
+      - "training.kubelab.local"
+    resources:
+      - "labservices"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+  -
+    apiGroups:
+      - "apps"
+    resources:
+      - "deployments"
+    verbs:
+      - "get"
+      - "create"
+      - "patch"
+---
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "RoleBinding"
+metadata:
+  name: "kubelab-operator"
+  namespace: "kubelab"
+subjects:
+  -
+    kind: "ServiceAccount"
+    name: "kubelab-operator"
+    namespace: "kubelab"
+roleRef:
+  apiGroup: "rbac.authorization.k8s.io"
+  kind: "Role"
+  name: "kubelab-operator"
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "kubelab-operator"
+  namespace: "kubelab"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "kubelab-operator"
+  template:
+    metadata:
+      labels:
+        app: "kubelab-operator"
+    spec:
+      automountServiceAccountToken: true
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "controller"
+          image: "kubelab:operator"
+          imagePullPolicy: "Never"
+          ports:
+            -
+              name: "http"
+              containerPort: 3000
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          command:
+            - "node"
+            - "lab-operator.mjs"
+      serviceAccountName: "kubelab-operator"

@@ -1,0 +1,62 @@
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "kubelab-canary"
+  namespace: "kubelab"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "kubelab-canary"
+  template:
+    metadata:
+      labels:
+        app: "kubelab-canary"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "web"
+          image: "kubelab:1.0"
+          imagePullPolicy: "Never"
+          ports:
+            -
+              name: "http"
+              containerPort: 3000
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          env:
+            -
+              name: "APP_VERSION"
+              value: "candidate"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "kubelab-preview"
+  namespace: "kubelab"
+spec:
+  selector:
+    app: "kubelab-canary"
+  ports:
+    -
+      port: 80
+      targetPort: "http"

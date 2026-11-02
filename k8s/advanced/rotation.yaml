@@ -1,0 +1,66 @@
+apiVersion: "v1"
+kind: "Secret"
+metadata:
+  name: "kubelab-rotation"
+  namespace: "kubelab"
+type: "Opaque"
+stringData:
+  DEMO_TOKEN: "example-generation-one"
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "kubelab-rotation"
+  namespace: "kubelab"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "kubelab-rotation"
+  template:
+    metadata:
+      labels:
+        app: "kubelab-rotation"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+        -
+          name: "check"
+          image: "kubelab:1.0"
+          imagePullPolicy: "Never"
+          ports:
+            -
+              name: "http"
+              containerPort: 3000
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          command:
+            - "node"
+            - "-e"
+          args:
+            - "console.log('token mounted: '+Boolean(process.env.DEMO_TOKEN)); setInterval(() => {}, 1000)"
+          env:
+            -
+              name: "DEMO_TOKEN"
+              valueFrom:
+                secretKeyRef:
+                  name: "kubelab-rotation"
+                  key: "DEMO_TOKEN"

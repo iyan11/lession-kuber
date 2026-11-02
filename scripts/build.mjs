@@ -16,7 +16,7 @@ for (const entry of payload.packages) {
 }
 const lab = path.join(root, '.lab');
 await mkdir(lab, { recursive: true });
-for (const name of ['public', 'k8s', 'Dockerfile', '.dockerignore', 'server.mjs']) {
+for (const name of ['public', 'k8s', 'charts', 'Dockerfile', '.dockerignore', 'server.mjs', 'lab-operator.mjs', 'lab-operator-model.mjs']) {
   await cp(path.join(root, name), path.join(lab, name), { recursive: true });
 }
 await mkdir(path.join(lab, 'scripts'), { recursive: true });

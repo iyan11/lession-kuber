@@ -1,4 +1,5 @@
 import { manifests } from './lab-manifests.js';
+import { simulateAdvanced } from './advanced-simulation.js';
 export function suggest(command, output = '') {
   const text = `${command}\n${output}`;
   if (/^minicube\b/i.test(command)) return { title: 'Опечатка в названии', text: 'Правильное имя инструмента — minikube, через k.', command: command.replace(/^minicube/i, 'minikube') };
@@ -22,6 +23,8 @@ export function createSimulation() {
 
 export function simulate(command, state) {
   const cmd = command.trim();
+  const advanced = simulateAdvanced(cmd, state);
+  if (advanced !== null) return advanced;
   const words = cmd.match(/"[^"]*"|'[^']*'|\S+/g) || [];
   const tool = words[0];
   const ok = text => ({ code: 0, text });
