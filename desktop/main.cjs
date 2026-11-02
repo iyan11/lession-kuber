@@ -73,6 +73,7 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle('cli:run', (event, command) => {
     requireTrusted(event);
+    return questionResult(() => {
     if (child) throw new Error('Другая команда уже выполняется. Остановите её кнопкой «Стоп».');
     const { executable, args } = parseCommand(command);
     const send = value => { if (!win.isDestroyed()) win.webContents.send('cli:output', value); };
@@ -94,6 +95,7 @@ app.whenReady().then(async () => {
         child.on('close', code => finish(code ?? 1));
         killTimer = setTimeout(() => { send({ stream: 'stderr', text: '\nЛимит выполнения 15 минут. Команда остановлена; при необходимости запустите снова.\n' }); stop(); }, 15 * 60 * 1000);
       } catch (error) { finish(1, error.message); }
+    });
     });
   });
   win.loadFile(path.join(__dirname, '../public/index.html'));

@@ -22,6 +22,8 @@ for (const name of ['public', 'k8s', 'Dockerfile', '.dockerignore', 'server.mjs'
 await mkdir(path.join(lab, 'scripts'), { recursive: true });
 await cp(path.join(root, 'scripts/Start-Lab.ps1'), path.join(lab, 'scripts/Start-Lab.ps1'));
 await cp(path.join(root, 'RUNNING.md'), path.join(lab, 'README.md'));
+await mkdir(path.join(lab, 'docs'), { recursive: true });
+await cp(path.join(root, 'docs/COURSE.md'), path.join(lab, 'docs/COURSE.md'));
 await writeFile(path.join(lab, 'package.json'), JSON.stringify({ name: 'kubelab-workload', private: true, type: 'module', scripts: { start: 'node server.mjs', web: 'node server.mjs' } }, null, 2));
 // Stage lab resources separately so electron-builder cannot exclude the desktop
 // package.json as an overlapping extraResource.

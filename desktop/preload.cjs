@@ -10,7 +10,7 @@ contextBridge.exposeInMainWorld('kubeDesktop', {
   forgetQuestionKey: () => questionCall('questions:forget'),
   askQuestion: input => questionCall('questions:ask', input),
   cancelQuestion: () => ipcRenderer.invoke('questions:cancel'),
-  run: command => ipcRenderer.invoke('cli:run', command),
+  run: command => questionCall('cli:run', command),
   stop: () => ipcRenderer.invoke('cli:stop'),
   environment: () => ipcRenderer.invoke('environment'),
   chooseFolder: () => ipcRenderer.invoke('workspace:choose'),

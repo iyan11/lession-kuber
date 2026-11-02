@@ -69,3 +69,7 @@
 .questions-dialog .question-actions>span { flex: 1; color: #91a5b9; font-size: 11px; }
 .questions-dialog .chat-footnote { color: #8fa3b8; font-size: 11px; line-height: 1.5; margin: 0; }
 @media(max-width:600px) { .questions-dialog[open] { padding: 12px; gap: 8px; } .questions-heading h2 { font-size: 20px; } .questions-heading button { padding: 7px; font-size: 11px; } .chat-message { max-width: 96%; } .questions-dialog .question-actions>span { flex-basis: 100%; } }
+.image-build-flow { list-style: decimal; display: grid; gap: 10px; margin: 18px 0; padding-left: 26px; }
+.lesson-prose .image-build-flow li { margin: 0; border: 1px solid #365248; border-radius: 6px; background: #152820; padding: 10px 14px; color: #c4e3d4; font-size: 13px; }
+
+.lesson-contents a{display:block;padding:2px 0;color:var(--green);font-size:13px;line-height:1.6}.lesson-contents ul{margin:0}.reading-section{scroll-margin-top:18px}.expected-exit{border-left:2px solid var(--green);padding-left:12px}

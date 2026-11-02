@@ -1,7 +1,7 @@
-.git
-node_modules
-test
-scripts
-k8s
-*.zip
-README.md
+**
+!Dockerfile
+!.dockerignore
+!package.json
+!server.mjs
+!public/
+!public/**

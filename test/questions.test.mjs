@@ -88,6 +88,7 @@ test('GigaChat uses Basic only for OAuth, caches and renews Bearer token; sends 
     const sent = JSON.parse(options.body);
     assert.equal(sent.model, 'GigaChat'); assert.equal(sent.tools, undefined);
     assert.ok(sent.messages[0].content.includes(lessons[2].title));
+    assert.ok(sent.messages[0].content.includes(lessons[2].sections[0].paragraphs[0]));
     assert.ok(!options.body.includes('DO NOT SEND'));
     return answer();
   });
@@ -96,7 +97,7 @@ test('GigaChat uses Basic only for OAuth, caches and renews Bearer token; sends 
   await q.ask(input);
   assert.equal(calls.length, 3);
   q.token.until = 0; await q.ask(input); assert.equal(calls.length, 5);
-  await assert.rejects(q.ask({ lesson: 9, question: 'test' }), /Выберите урок/);
+  await assert.rejects(q.ask({ lesson: lessons.length, question: 'test' }), /Выберите урок/);
 });
 test('Ollama sends no credentials, uses loopback only and rejects cloud models', async t => {
   let calls = 0;
@@ -127,6 +128,7 @@ test('limits and network errors stay readable and never expose credentials or pr
   let bridge;
   vm.runInNewContext(await readFile(new URL('../desktop/preload.cjs', import.meta.url), 'utf8'), { require: () => ({ contextBridge: { exposeInMainWorld: (_name, api) => { bridge = api; } }, ipcRenderer: { invoke: async () => ({ ok: false, message: 'Понятная ошибка' }) } }) });
   await assert.rejects(bridge.askQuestion(input), error => error.message === 'Понятная ошибка');
+    await assert.rejects(bridge.run('minikube image build -t kubelab:1.0 . -p kubelab'), error => error.message === 'Понятная ошибка');
 });
 test('questions can be cancelled and recover after timeout without background requests', async t => {
   const q = await fixture(t, (_url, { signal }) => new Promise((_, reject) => { signal.throwIfAborted(); signal.addEventListener('abort', () => reject(signal.reason)); }), { timeout: 40 });

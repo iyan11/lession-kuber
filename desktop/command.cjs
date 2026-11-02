@@ -14,8 +14,13 @@ function parseCommand(source) {
   if (active) tokens.push(word);
   const executable = tokens.shift();
   if (!tools.has(executable)) throw new Error('Доступны docker, minikube и kubectl. Команда help покажет справку.');
-  if (executable === 'kubectl' && tokens.includes('edit')) throw new Error('kubectl edit требует внешнего редактора. Используйте patch из урока или обычный PowerShell.');
-  if (tokens.some(x => /^--?(it|ti|i|t|interactive|tty|attach)(=|$)/.test(x))) throw new Error('Интерактивный ввод (-it/--tty) не поддерживается. Используйте kubectl exec … -- команду без -it.');
+  const separator = tokens.indexOf('--');
+  const options = separator < 0 ? tokens : tokens.slice(0, separator);
+  if (executable === 'kubectl' && options.includes('edit')) throw new Error('kubectl edit требует внешнего редактора. Используйте patch из урока или обычный PowerShell.');
+  // -t is a tag for image builds, but a terminal flag for exec/run/attach.
+  // Arguments after -- belong to the program inside the container.
+  const interactiveOperation = (executable === 'kubectl' && options.some(x => ['exec', 'run', 'attach', 'debug'].includes(x))) || (executable === 'docker' && options.some(x => ['exec', 'run', 'attach', 'start'].includes(x)));
+  if (interactiveOperation && options.some(x => /^--(interactive|tty|attach)(=|$)/.test(x) || /^-[a-zA-Z]*[it][a-zA-Z]*(=|$)/.test(x))) throw new Error('Интерактивный ввод (-it/--tty) не поддерживается. Используйте kubectl exec … -- команду без -it.');
   return { executable, args: tokens };
 }
 module.exports = { parseCommand };
